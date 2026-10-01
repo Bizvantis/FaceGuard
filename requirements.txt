@@ -1,0 +1,7 @@
+# Versions FaceGuard was built and tested with (Python 3.12, Windows 11).
+numpy==2.5.3
+opencv-contrib-python==5.0.0.93
+PySide6-Essentials==6.11.2
+scikit-learn==1.9.1
+mediapipe==1.0.1
+pytest==9.1.1

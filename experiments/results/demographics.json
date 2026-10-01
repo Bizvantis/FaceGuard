@@ -1,0 +1,363 @@
+{
+  "seed": 2026,
+  "labeled_people": 5721,
+  "attributes": {
+    "sex": {
+      "female": {
+        "people": 1007,
+        "images": 2107,
+        "genuine_pairs": 6471,
+        "impostor_pairs": 1000000,
+        "relaxed/fnmr": 0.017153453871117292,
+        "relaxed/fnmr_ci": [
+          0.014264268702876278,
+          0.0206155961574471
+        ],
+        "relaxed/fmr": 0.001654,
+        "relaxed/fmr_ci": [
+          0.0015762455138337878,
+          0.001735583363444397
+        ],
+        "relaxed/false_matches": 1654,
+        "balanced/fnmr": 0.045433472415391744,
+        "balanced/fnmr_ci": [
+          0.04062338478072629,
+          0.050782959430072605
+        ],
+        "balanced/fmr": 0.000141,
+        "balanced/fmr_ci": [
+          0.0001195691373154001,
+          0.00016627136459972778
+        ],
+        "balanced/false_matches": 141,
+        "strict/fnmr": 0.14943594498531912,
+        "strict/fnmr_ci": [
+          0.1409573936503253,
+          0.1583304839094902
+        ],
+        "strict/fmr": 9e-06,
+        "strict/fmr_ci": [
+          4.735027088756154e-06,
+          1.7106489004875616e-05
+        ],
+        "strict/false_matches": 9
+      },
+      "male": {
+        "people": 3547,
+        "images": 8211,
+        "genuine_pairs": 41876,
+        "impostor_pairs": 1000000,
+        "relaxed/fnmr": 0.00558792625847741,
+        "relaxed/fnmr_ci": [
+          0.004917898618042574,
+          0.006348657843813766
+        ],
+        "relaxed/fmr": 0.000661,
+        "relaxed/fmr_ci": [
+          0.0006125070534699467,
+          0.0007133294531965292
+        ],
+        "relaxed/false_matches": 661,
+        "balanced/fnmr": 0.017695099818511795,
+        "balanced/fnmr_ci": [
+          0.016475857571249076,
+          0.019002824850510604
+        ],
+        "balanced/fmr": 3.6e-05,
+        "balanced/fmr_ci": [
+          2.600507615693147e-05,
+          4.983623249109721e-05
+        ],
+        "balanced/false_matches": 36,
+        "strict/fnmr": 0.05664342344063426,
+        "strict/fnmr_ci": [
+          0.05446977661833167,
+          0.05889840765865948
+        ],
+        "strict/fmr": 2e-06,
+        "strict/fmr_ci": [
+          5.484608289777455e-07,
+          7.293109046847418e-06
+        ],
+        "strict/false_matches": 2
+      }
+    },
+    "ethnicity": {
+      "asian": {
+        "people": 367,
+        "images": 752,
+        "genuine_pairs": 3247,
+        "impostor_pairs": 282376,
+        "relaxed/fnmr": 0.0021558361564521095,
+        "relaxed/fnmr_ci": [
+          0.0010446724770372417,
+          0.004443629383010322
+        ],
+        "relaxed/fmr": 0.0015369578151117659,
+        "relaxed/fmr_ci": [
+          0.0013990905772041941,
+          0.0016883876048786163
+        ],
+        "relaxed/false_matches": 434,
+        "balanced/fnmr": 0.010163227594702803,
+        "balanced/fnmr_ci": [
+          0.007245918252554778,
+          0.014238241418590076
+        ],
+        "balanced/fmr": 0.0003116412159673627,
+        "balanced/fmr_ci": [
+          0.00025298250884792615,
+          0.0003838958142681811
+        ],
+        "balanced/false_matches": 88,
+        "strict/fnmr": 0.04280874653526332,
+        "strict/fnmr_ci": [
+          0.03636944797007554,
+          0.05032859354631209
+        ],
+        "strict/fmr": 4.957928435844406e-05,
+        "strict/fmr_ci": [
+          2.9534527915133316e-05,
+          8.322706235838428e-05
+        ],
+        "strict/false_matches": 14
+      },
+      "black": {
+        "people": 276,
+        "images": 508,
+        "genuine_pairs": 2223,
+        "impostor_pairs": 128778,
+        "relaxed/fnmr": 0.003598740440845704,
+        "relaxed/fnmr_ci": [
+          0.00182463957538204,
+          0.007085558617430597
+        ],
+        "relaxed/fmr": 0.005451241671714113,
+        "relaxed/fmr_ci": [
+          0.005063572371634119,
+          0.00586841603999922
+        ],
+        "relaxed/false_matches": 702,
+        "balanced/fnmr": 0.024291497975708502,
+        "balanced/fnmr_ci": [
+          0.018665329399985692,
+          0.03155898830631187
+        ],
+        "balanced/fmr": 0.0008697137709857273,
+        "balanced/fmr_ci": [
+          0.0007229151853389197,
+          0.0010462907614721406
+        ],
+        "balanced/false_matches": 112,
+        "strict/fnmr": 0.10211426000899686,
+        "strict/fnmr_ci": [
+          0.09020529399542858,
+          0.11539603840288838
+        ],
+        "strict/fmr": 5.435711068660796e-05,
+        "strict/fmr_ci": [
+          2.633098486873158e-05,
+          0.00011221028599938125
+        ],
+        "strict/false_matches": 7
+      },
+      "indian": {
+        "people": 105,
+        "images": 126,
+        "genuine_pairs": 31,
+        "impostor_pairs": 7875,
+        "relaxed/fnmr": 0.0,
+        "relaxed/fnmr_ci": [
+          0.0,
+          0.11025900073475385
+        ],
+        "relaxed/fmr": 0.001142857142857143,
+        "relaxed/fmr_ci": [
+          0.0006013847083617797,
+          0.0021707994665301233
+        ],
+        "relaxed/false_matches": 9,
+        "balanced/fnmr": 0.0,
+        "balanced/fnmr_ci": [
+          0.0,
+          0.11025900073475385
+        ],
+        "balanced/fmr": 0.00012698412698412698,
+        "balanced/fmr_ci": [
+          2.2415591594527565e-05,
+          0.0007190131991556253
+        ],
+        "balanced/false_matches": 1,
+        "strict/fnmr": 0.0967741935483871,
+        "strict/fnmr_ci": [
+          0.03346403609464399,
+          0.2490028999817704
+        ],
+        "strict/fmr": 0.00012698412698412698,
+        "strict/fmr_ci": [
+          2.2415591594527565e-05,
+          0.0007190131991556253
+        ],
+        "strict/false_matches": 1
+      },
+      "white": {
+        "people": 4088,
+        "images": 9266,
+        "genuine_pairs": 41687,
+        "impostor_pairs": 1000000,
+        "relaxed/fnmr": 0.010075083359320652,
+        "relaxed/fnmr_ci": [
+          0.0091605126413322,
+          0.011079942279107689
+        ],
+        "relaxed/fmr": 0.000606,
+        "relaxed/fmr_ci": [
+          0.0005596455903031193,
+          0.0006561913389377332
+        ],
+        "relaxed/false_matches": 606,
+        "balanced/fnmr": 0.02717873677645309,
+        "balanced/fnmr_ci": [
+          0.02566082632659204,
+          0.028783783397957157
+        ],
+        "balanced/fmr": 3.5e-05,
+        "balanced/fmr_ci": [
+          2.516737329187269e-05,
+          4.867394303932648e-05
+        ],
+        "balanced/false_matches": 35,
+        "strict/fnmr": 0.07997697123803583,
+        "strict/fnmr_ci": [
+          0.07741152699952272,
+          0.0826198214681465
+        ],
+        "strict/fmr": 5e-06,
+        "strict/fmr_ci": [
+          2.1356714627393045e-06,
+          1.1705875363574406e-05
+        ],
+        "strict/false_matches": 5
+      }
+    },
+    "age": {
+      "middle aged": {
+        "people": 670,
+        "images": 1191,
+        "genuine_pairs": 3499,
+        "impostor_pairs": 708645,
+        "relaxed/fnmr": 0.010574449842812233,
+        "relaxed/fnmr_ci": [
+          0.007681546260901635,
+          0.014540868820613898
+        ],
+        "relaxed/fmr": 0.0010978698784299614,
+        "relaxed/fmr_ci": [
+          0.001023422924821612,
+          0.0011777259495322381
+        ],
+        "relaxed/false_matches": 778,
+        "balanced/fnmr": 0.018290940268648186,
+        "balanced/fnmr_ci": [
+          0.014350227299264901,
+          0.023288243135709947
+        ],
+        "balanced/fmr": 8.46686281565523e-05,
+        "balanced/fmr_ci": [
+          6.578479384196413e-05,
+          0.00010897256513485746
+        ],
+        "balanced/false_matches": 60,
+        "strict/fnmr": 0.045155758788225205,
+        "strict/fnmr_ci": [
+          0.038760002382207455,
+          0.052549179283329465
+        ],
+        "strict/fmr": 2.3989444644356484e-05,
+        "strict/fmr_ci": [
+          1.4978463388352739e-05,
+          3.8421186450290276e-05
+        ],
+        "strict/false_matches": 17
+      },
+      "senior": {
+        "people": 734,
+        "images": 1811,
+        "genuine_pairs": 11013,
+        "impostor_pairs": 1000000,
+        "relaxed/fnmr": 0.006356124580041768,
+        "relaxed/fnmr_ci": [
+          0.005034291846156257,
+          0.00802222700222221
+        ],
+        "relaxed/fmr": 0.000802,
+        "relaxed/fmr_ci": [
+          0.0007484005246077708,
+          0.0008594348987316666
+        ],
+        "relaxed/false_matches": 802,
+        "balanced/fnmr": 0.016707527467538365,
+        "balanced/fnmr_ci": [
+          0.014476673722125417,
+          0.01927543178150641
+        ],
+        "balanced/fmr": 5.4e-05,
+        "balanced/fmr_ci": [
+          4.1390511244811956e-05,
+          7.0450659106148e-05
+        ],
+        "balanced/false_matches": 54,
+        "strict/fnmr": 0.04885135748660674,
+        "strict/fnmr_ci": [
+          0.04498037731811357,
+          0.053036970957094455
+        ],
+        "strict/fmr": 4e-06,
+        "strict/fmr_ci": [
+          1.5554977945430998e-06,
+          1.0286056714941093e-05
+        ],
+        "strict/false_matches": 4
+      },
+      "youth": {
+        "people": 1016,
+        "images": 1789,
+        "genuine_pairs": 3552,
+        "impostor_pairs": 1000000,
+        "relaxed/fnmr": 0.024774774774774775,
+        "relaxed/fnmr_ci": [
+          0.02015338459070142,
+          0.030422996539436656
+        ],
+        "relaxed/fmr": 0.001068,
+        "relaxed/fmr_ci": [
+          0.0010058690127687602,
+          0.0011339643668473282
+        ],
+        "relaxed/false_matches": 1068,
+        "balanced/fnmr": 0.05799549549549549,
+        "balanced/fnmr_ci": [
+          0.0507755897186496,
+          0.06617045197229636
+        ],
+        "balanced/fmr": 7.5e-05,
+        "balanced/fmr_ci": [
+          5.983877093125499e-05,
+          9.400223807312478e-05
+        ],
+        "balanced/false_matches": 75,
+        "strict/fnmr": 0.17820945945945946,
+        "strict/fnmr_ci": [
+          0.1659737500010162,
+          0.1911404701599718
+        ],
+        "strict/fmr": 1.6e-05,
+        "strict/fmr_ci": [
+          9.848953866832525e-06,
+          2.5992508444605853e-05
+        ],
+        "strict/false_matches": 16
+      }
+    }
+  }
+}

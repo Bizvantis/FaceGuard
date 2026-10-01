@@ -1,0 +1,223 @@
+{
+  "owner_stream": {
+    "totals": {
+      "photos": 1578,
+      "faces>=2": 243,
+      "unknown second face": 224
+    },
+    "per_owner": [
+      {
+        "owner": "Tony_Blair",
+        "stream_photos": 134,
+        "photos_with_unknown_second_face": 16
+      },
+      {
+        "owner": "Atal_Bihari_Vajpayee",
+        "stream_photos": 14,
+        "photos_with_unknown_second_face": 1
+      },
+      {
+        "owner": "Guillermo_Coria",
+        "stream_photos": 20,
+        "photos_with_unknown_second_face": 0
+      },
+      {
+        "owner": "Naomi_Watts",
+        "stream_photos": 12,
+        "photos_with_unknown_second_face": 1
+      },
+      {
+        "owner": "Jeremy_Greenstock",
+        "stream_photos": 14,
+        "photos_with_unknown_second_face": 3
+      },
+      {
+        "owner": "Jennifer_Lopez",
+        "stream_photos": 11,
+        "photos_with_unknown_second_face": 2
+      },
+      {
+        "owner": "Bill_Clinton",
+        "stream_photos": 19,
+        "photos_with_unknown_second_face": 2
+      },
+      {
+        "owner": "Hans_Blix",
+        "stream_photos": 29,
+        "photos_with_unknown_second_face": 10
+      },
+      {
+        "owner": "Arnold_Schwarzenegger",
+        "stream_photos": 32,
+        "photos_with_unknown_second_face": 3
+      },
+      {
+        "owner": "Carlos_Menem",
+        "stream_photos": 11,
+        "photos_with_unknown_second_face": 2
+      },
+      {
+        "owner": "Michael_Bloomberg",
+        "stream_photos": 10,
+        "photos_with_unknown_second_face": 2
+      },
+      {
+        "owner": "Rudolph_Giuliani",
+        "stream_photos": 16,
+        "photos_with_unknown_second_face": 2
+      },
+      {
+        "owner": "Lindsay_Davenport",
+        "stream_photos": 12,
+        "photos_with_unknown_second_face": 0
+      },
+      {
+        "owner": "George_Robertson",
+        "stream_photos": 12,
+        "photos_with_unknown_second_face": 2
+      },
+      {
+        "owner": "Nestor_Kirchner",
+        "stream_photos": 27,
+        "photos_with_unknown_second_face": 8
+      },
+      {
+        "owner": "Megawati_Sukarnoputri",
+        "stream_photos": 23,
+        "photos_with_unknown_second_face": 8
+      },
+      {
+        "owner": "Jennifer_Aniston",
+        "stream_photos": 11,
+        "photos_with_unknown_second_face": 0
+      },
+      {
+        "owner": "Jacques_Chirac",
+        "stream_photos": 42,
+        "photos_with_unknown_second_face": 4
+      },
+      {
+        "owner": "Gerhard_Schroeder",
+        "stream_photos": 99,
+        "photos_with_unknown_second_face": 13
+      },
+      {
+        "owner": "Jean_Chretien",
+        "stream_photos": 45,
+        "photos_with_unknown_second_face": 2
+      },
+      {
+        "owner": "Mahmoud_Abbas",
+        "stream_photos": 19,
+        "photos_with_unknown_second_face": 3
+      },
+      {
+        "owner": "Angelina_Jolie",
+        "stream_photos": 10,
+        "photos_with_unknown_second_face": 0
+      },
+      {
+        "owner": "John_Negroponte",
+        "stream_photos": 21,
+        "photos_with_unknown_second_face": 3
+      },
+      {
+        "owner": "Silvio_Berlusconi",
+        "stream_photos": 23,
+        "photos_with_unknown_second_face": 7
+      },
+      {
+        "owner": "Gray_Davis",
+        "stream_photos": 16,
+        "photos_with_unknown_second_face": 4
+      },
+      {
+        "owner": "Winona_Ryder",
+        "stream_photos": 14,
+        "photos_with_unknown_second_face": 1
+      },
+      {
+        "owner": "Tom_Daschle",
+        "stream_photos": 15,
+        "photos_with_unknown_second_face": 1
+      },
+      {
+        "owner": "Serena_Williams",
+        "stream_photos": 42,
+        "photos_with_unknown_second_face": 3
+      },
+      {
+        "owner": "Ariel_Sharon",
+        "stream_photos": 67,
+        "photos_with_unknown_second_face": 10
+      },
+      {
+        "owner": "Amelie_Mauresmo",
+        "stream_photos": 11,
+        "photos_with_unknown_second_face": 0
+      },
+      {
+        "owner": "John_Ashcroft",
+        "stream_photos": 43,
+        "photos_with_unknown_second_face": 7
+      },
+      {
+        "owner": "David_Beckham",
+        "stream_photos": 21,
+        "photos_with_unknown_second_face": 0
+      },
+      {
+        "owner": "Saddam_Hussein",
+        "stream_photos": 13,
+        "photos_with_unknown_second_face": 0
+      },
+      {
+        "owner": "Luiz_Inacio_Lula_da_Silva",
+        "stream_photos": 38,
+        "photos_with_unknown_second_face": 8
+      },
+      {
+        "owner": "Alejandro_Toledo",
+        "stream_photos": 29,
+        "photos_with_unknown_second_face": 5
+      },
+      {
+        "owner": "Tiger_Woods",
+        "stream_photos": 13,
+        "photos_with_unknown_second_face": 1
+      },
+      {
+        "owner": "George_W_Bush",
+        "stream_photos": 520,
+        "photos_with_unknown_second_face": 83
+      },
+      {
+        "owner": "Kofi_Annan",
+        "stream_photos": 22,
+        "photos_with_unknown_second_face": 1
+      },
+      {
+        "owner": "Andre_Agassi",
+        "stream_photos": 26,
+        "photos_with_unknown_second_face": 2
+      },
+      {
+        "owner": "Roh_Moo-hyun",
+        "stream_photos": 22,
+        "photos_with_unknown_second_face": 4
+      }
+    ]
+  },
+  "stranger_classification": {
+    "intruder": {
+      "unknown (acted on)": 291,
+      "quality gate": 7,
+      "uncertain band": 2
+    },
+    "shoulder": {
+      "unknown (acted on)": 135,
+      "quality gate": 13,
+      "uncertain band": 2
+    }
+  }
+}

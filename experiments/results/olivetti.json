@@ -1,0 +1,33 @@
+{
+  "dataset": "AT&T / Olivetti faces",
+  "identities": 40,
+  "images": 400,
+  "failures": 0,
+  "threshold": 0.45,
+  "closed_set_accuracy": 1.0,
+  "open_set_dir": 1.0,
+  "open_set_far": 0.215,
+  "auc": 0.9997715527065527,
+  "eer": 0.006653846153846175,
+  "eer_threshold": 0.47888463735580444,
+  "tar_at_far": {
+    "0.01": 0.9961111111111111,
+    "0.001": 0.9738888888888889
+  },
+  "tar_at_threshold": 0.9977777777777778,
+  "far_at_threshold": 0.014025641025641026,
+  "lfw_accuracy": null,
+  "lfw_std": null,
+  "ms_per_image": 24.185820749989944,
+  "notes": [
+    "Olivetti images are 64x64 grayscale; impostor scores run higher than on webcam colour images."
+  ],
+  "classifiers": {
+    "Top-3 cosine (FaceGuard)": 1.0,
+    "1-NN cosine": 1.0,
+    "Nearest centroid": 1.0,
+    "Linear SVM": 1.0,
+    "k-NN (k=5, cosine)": 1.0,
+    "Logistic regression": 1.0
+  }
+}
