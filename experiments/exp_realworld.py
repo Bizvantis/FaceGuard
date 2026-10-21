@@ -206,8 +206,8 @@ class RealWorldTest:
                 return k
 
     def pick_volunteer(self):
-        k = self.wait_key(["Which volunteer is taking part? Press 1, 2 or 3.", "(Esc = back)"], {ord("1"), ord("2"), ord("3"), 27},
-                          title="Volunteer")
+        k = self.wait_key(["Which volunteer is taking part? Press their number, 1-9.", "(Esc = back)"],
+                          {ord(str(i)) for i in range(1, 10)} | {27}, title="Volunteer")
         if k == 27:
             return None
         vid = f"V{chr(k)}"

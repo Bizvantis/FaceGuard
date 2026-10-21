@@ -245,10 +245,11 @@ def preprocess(build: Path, work: Path):
         t1 = inner.index("\\end{tabular}") + len("\\end{tabular}")
         spec, after_spec = braced(inner, t0 + len("\\begin{tabular}"))
         spec = spec.replace("@{}", "")
+        spec = re.sub(r">\{[^{}]*\}", "", spec)  # pandoc mis-parses array-package column prefixes (\raggedright etc.)
         rows = inner[after_spec:inner.index("\\end{tabular}")]
         note = inner[t1:].replace("\\\\[2pt]", "").replace("\\raggedright", "").replace("\\scriptsize", "").strip()
         rows = rows.replace("\\toprule", "").replace("\\bottomrule", "")
-        rows = rows.replace("\\multicolumn{2}{@{}l}", "\\multicolumn{2}{l}")
+        rows = re.sub(r"\\multicolumn\{(\d+)\}\{@\{\}l\}", r"\\multicolumn{\1}{l}", rows)  # pandoc rejects @{} here
         rows = rows.replace("\\quad ", "\u2003").replace("\\quad", "\u2003")
         # first \midrule ends the header; later ones become a marker on the next row
         first = rows.index("\\midrule")
@@ -259,6 +260,8 @@ def preprocess(build: Path, work: Path):
         hr[last] = hr[last].replace(hr[last].lstrip(), "@@HE@@" + hr[last].lstrip(), 1)
         head_rows = "\\\\".join(hr)
         body_rows = re.sub(r"\\midrule\s*", "@@MR@@", body_rows)
+        # pandoc only parses \multicolumn at the start of a cell, so the marker goes inside it
+        body_rows = re.sub(r"@@MR@@(\\multicolumn\{\d+\}\{[^}]*\}\{)", r"\1@@MR@@", body_rows)
         tables.append(caption)
         out.append(rest[pos:a])
         out.append(f"\n\n@@TABCAP:{len(tables)}@@ {caption}\n\n\\begin{{tabular}}{{{spec}}}\n\\toprule\n{head_rows}\\midrule\n"

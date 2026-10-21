@@ -74,6 +74,7 @@ class LivenessConfig:
     min_response: float = 0.15  # an action that starts sooner after the prompt cannot be a reaction to it
     response_window: float | None = 3.5  # the requested action must start within this many seconds (None = off)
     parallax_fraction: float | None = 0.8  # turns also need nose parallax >= this x turn_degrees (None = off)
+    flow_threshold: float | None = None  # turns also need tracked-feature non-planarity >= this (None = off; see vision/flow.py)
 
 
 @dataclass
@@ -86,6 +87,7 @@ class LivenessObservation:
     embedding: np.ndarray | None = None  # only on frames where a fresh embedding was computed
     track_id: int | None = None
     landmarks: np.ndarray | None = None  # the 5 facial landmarks (enables the planar-attack parallax test)
+    planarity: float | None = None  # homography residual of tracked face features since the challenge began
 
 
 @dataclass
@@ -366,6 +368,9 @@ class LivenessSession:
             parallax = self._parallax_progress(obs, sign)
             if parallax is not None:  # a real head must also move its nose out of the eye/mouth plane
                 progress = min(progress, parallax)
+            if cfg.flow_threshold is not None:  # ... and move its tracked surface points off a single plane
+                flow = obs.planarity if obs.planarity is not None and np.isfinite(obs.planarity) else 0.0
+                progress = min(progress, flow / cfg.flow_threshold)
         elif c is Challenge.BLINK:
             if obs.blink is None:
                 return
@@ -448,8 +453,10 @@ class VerificationTask:
     def needs_mesh(self) -> bool:
         return self.session.expressions
 
-    def update(self, result: FrameResult) -> LivenessState:
-        state = self.session.update(observation_from_frame(result))
+    def update(self, result: FrameResult, planarity: float | None = None) -> LivenessState:
+        obs = observation_from_frame(result)
+        obs.planarity = planarity
+        state = self.session.update(obs)
         if state.finished and self.result is None:
             self.result = self._decide(state)
         return state

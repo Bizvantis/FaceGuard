@@ -41,183 +41,194 @@
   },
   "evaluation_v2": {
     "owner_live": {
-      "n": 3,
-      "verified": 3,
-      "rate": 1.0,
+      "n": 26,
+      "verified": 24,
+      "rate": 0.9230769230769231,
       "ci": [
-        0.43849391955098227,
-        1.0
+        0.7585805251948495,
+        0.9786453608166245
       ],
       "reasons": {
-        "passed": 3
+        "passed": 24,
+        "A different face appeared": 2
       },
-      "reached_challenge": 3,
-      "duration_mean": 9.110000000000001,
+      "reached_challenge": 26,
+      "duration_mean": 6.1325,
       "fps_median": 21.3,
-      "live_rate": 1.0,
+      "live_rate": 0.9230769230769231,
       "live_ci": [
-        0.43849391955098227,
-        1.0
+        0.7585805251948495,
+        0.9786453608166245
       ],
-      "similarity_median": 0.7303,
+      "similarity_median": 0.7937000000000001,
       "similarity_min": 0.7256,
       "max_yaw_change": {
-        "n": 3,
-        "median": 23.01,
-        "max": 37.894999999999996
+        "n": 26,
+        "median": 30.73,
+        "max": 50.72
       },
       "max_parallax": {
-        "n": 3,
-        "median": 27.38,
-        "max": 49.16
+        "n": 26,
+        "median": 34.575,
+        "max": 63.6
       }
     },
     "owner_turns": {
-      "n": 3,
-      "verified": 2,
-      "rate": 0.6666666666666666,
+      "n": 12,
+      "verified": 11,
+      "rate": 0.9166666666666666,
       "ci": [
-        0.2076549551264879,
-        0.9385096847238394
+        0.6461140782014047,
+        0.9851352905492264
       ],
       "reasons": {
         "No response to the prompt in time": 1,
-        "passed": 2
+        "passed": 11
       },
-      "reached_challenge": 3,
-      "duration_mean": 9.115,
+      "reached_challenge": 12,
+      "duration_mean": 6.281818181818182,
       "fps_median": 21.3,
-      "live_rate": 0.6666666666666666,
+      "live_rate": 0.9166666666666666,
       "live_ci": [
-        0.2076549551264879,
-        0.9385096847238394
+        0.6461140782014047,
+        0.9851352905492264
       ],
-      "similarity_median": 0.74095,
+      "similarity_median": 0.7636,
       "similarity_min": 0.7374,
       "max_yaw_change": {
-        "n": 3,
-        "median": 21.4,
+        "n": 12,
+        "median": 27.225,
         "max": 69.87
       },
       "max_parallax": {
-        "n": 3,
-        "median": 26.23,
-        "max": 66.69
+        "n": 12,
+        "median": 32.575,
+        "max": 68.26
       }
     },
     "phone_full": {
-      "n": 10,
+      "n": 15,
       "verified": 0,
       "rate": 0.0,
       "ci": [
         0.0,
-        0.2775401687666166
+        0.20388926630434784
       ],
       "reasons": {
         "Timed out waiting for: turn your head to the right": 1,
         "Timed out waiting for: blink your eyes": 2,
         "Face lost - stay in front of the camera": 1,
-        "Timed out waiting for: turn your head to the left": 1,
-        "No response to the prompt in time": 4,
-        "Timed out waiting for: smile": 1
+        "Timed out waiting for: turn your head to the left": 2,
+        "No response to the prompt in time": 6,
+        "Timed out waiting for: smile": 2,
+        "A different face appeared": 1
       },
-      "reached_challenge": 10,
+      "reached_challenge": 15,
       "duration_mean": null,
       "fps_median": 21.3,
       "max_yaw_change": {
-        "n": 4,
-        "median": 9.085,
+        "n": 7,
+        "median": 9.36,
         "max": 12.590000000000002
       },
       "max_parallax": {
-        "n": 4,
-        "median": 11.135,
+        "n": 7,
+        "median": 10.6,
         "max": 13.05
       }
     },
     "phone_turns": {
-      "n": 3,
+      "n": 15,
       "verified": 0,
       "rate": 0.0,
       "ci": [
         0.0,
-        0.5615060804490177
+        0.20388926630434784
       ],
       "reasons": {
-        "Timed out waiting for: turn your head to the left": 2,
-        "Timed out waiting for: turn your head to the right": 1
+        "Timed out waiting for: turn your head to the left": 3,
+        "Timed out waiting for: turn your head to the right": 3,
+        "No response to the prompt in time": 7,
+        "A different face appeared": 2
       },
-      "reached_challenge": 3,
+      "reached_challenge": 15,
       "duration_mean": null,
       "fps_median": 21.3,
       "max_yaw_change": {
-        "n": 3,
-        "median": 9.81,
-        "max": 10.919999999999998
+        "n": 15,
+        "median": 9.53,
+        "max": 17.509999999999998
       },
       "max_parallax": {
-        "n": 3,
+        "n": 15,
         "median": 10.25,
-        "max": 14.01
+        "max": 17.43
       }
     },
     "phone_turns_noparallax": {
-      "n": 2,
+      "n": 15,
       "verified": 0,
       "rate": 0.0,
       "ci": [
         0.0,
-        0.6576280471103807
+        0.20388926630434784
       ],
       "reasons": {
-        "Timed out waiting for: turn your head to the left": 2
+        "Timed out waiting for: turn your head to the left": 3,
+        "A different face appeared": 1,
+        "No response to the prompt in time": 11
       },
-      "reached_challenge": 2,
+      "reached_challenge": 15,
       "duration_mean": null,
       "fps_median": 21.3,
       "max_yaw_change": {
-        "n": 2,
-        "median": 7.08,
-        "max": 7.12
+        "n": 15,
+        "median": 3.5300000000000002,
+        "max": 8.790000000000001
       },
       "max_parallax": {
-        "n": 2,
-        "median": 9.53,
-        "max": 10.02
+        "n": 15,
+        "median": 4.99,
+        "max": 10.22
       }
     },
     "volunteer_live": {
-      "n": 3,
+      "n": 17,
       "verified": 0,
       "rate": 0.0,
       "ci": [
         0.0,
-        0.5615060804490177
+        0.18432366037156456
       ],
       "reasons": {
         "Wrong action - follow the prompts in the order shown": 2,
-        "passed": 1
+        "passed": 9,
+        "No response to the prompt in time": 1,
+        "Timed out waiting for: smile": 4,
+        "A different face appeared": 1
       },
-      "reached_challenge": 3,
+      "reached_challenge": 17,
       "duration_mean": null,
       "fps_median": null,
-      "live_rate": 0.3333333333333333,
+      "live_rate": 0.5294117647058824,
       "live_ci": [
-        0.0614903152761605,
-        0.7923450448735121
+        0.30962897311549487,
+        0.738351988039119
       ],
-      "similarity_median": 0.2752,
-      "similarity_min": 0.2752,
+      "similarity_median": 0.2404,
+      "similarity_min": 0.1895,
       "false_accepts": 0,
       "matched_owner": 0,
       "far_ci": [
         0.0,
-        0.5615060804490177
+        0.18432366037156456
       ],
       "subjects": [
-        "V1"
+        "V1",
+        "V2",
+        "V3"
       ],
-      "max_similarity_to_owner": 0.2752
+      "max_similarity_to_owner": 0.29
     },
     "guard_desk": {
       "sessions": 1,
@@ -241,6 +252,8 @@
         0.20654329147389294,
         1.0
       ],
+      "timed_trials": 1,
+      "untimed_trials": 0,
       "latency_median": 27.91,
       "latency_max": 27.91,
       "latency_min": 27.91,
@@ -250,62 +263,156 @@
       ]
     },
     "guard_intruder": {
-      "trials": 1,
-      "detected": 1,
+      "trials": 6,
+      "detected": 6,
       "detected_ci": [
-        0.20654329147389294,
-        1.0
+        0.6096569663469354,
+        0.9999999999999999
       ],
-      "latency_median": 13.91,
-      "latency_max": 13.91,
-      "latency_min": 13.91,
-      "since_event_median": 21.0,
+      "timed_trials": 6,
+      "untimed_trials": 0,
+      "latency_median": 4.695,
+      "latency_max": 20.61,
+      "latency_min": 3.17,
+      "since_event_median": 7.2250000000000005,
       "subjects": [
-        "V1"
+        "V1",
+        "V2",
+        "V3"
       ]
     },
     "guard_shoulder": {
-      "trials": 1,
-      "detected": 1,
+      "trials": 6,
+      "detected": 6,
       "detected_ci": [
-        0.20654329147389294,
-        1.0
+        0.6096569663469354,
+        0.9999999999999999
       ],
-      "latency_median": 2.0,
-      "latency_max": 2.0,
-      "latency_min": 2.0,
-      "since_event_median": 2.3100000000000005,
+      "timed_trials": 1,
+      "untimed_trials": 5,
+      "latency_median": 15.41,
+      "latency_max": 15.41,
+      "latency_min": 15.41,
+      "since_event_median": 18.049999999999997,
       "subjects": [
-        "V1"
+        "V1",
+        "V2",
+        "V3"
       ]
     },
     "guard_lockwatch": {
-      "trials": 1,
-      "detected": 1,
+      "trials": 5,
+      "detected": 5,
       "detected_ci": [
-        0.20654329147389294,
+        0.5655085052479191,
         1.0
       ],
-      "latency_median": 11.34,
+      "timed_trials": 5,
+      "untimed_trials": 0,
+      "latency_median": 4.52,
       "latency_max": 11.34,
-      "latency_min": 11.34,
-      "since_event_median": 11.63,
+      "latency_min": 2.8,
+      "since_event_median": 6.1,
       "subjects": [
-        "V1"
+        "V1",
+        "V2",
+        "V3"
       ]
     },
     "bpcer_all_live": {
-      "n": 9,
-      "rejected": 3,
-      "rate": 0.3333333333333333,
+      "n": 55,
+      "rejected": 11,
+      "rate": 0.2,
       "ci": [
-        0.12058159868274293,
-        0.6458026525009102
+        0.1155209712045974,
+        0.3236513150690593
       ],
       "subjects": [
         "V1",
+        "V2",
+        "V3",
         "owner"
       ]
+    },
+    "owner_reasons": {
+      "passed": 35,
+      "A different face appeared": 2,
+      "No response to the prompt in time": 1
+    }
+  },
+  "round1_attacks": {
+    "n": 14,
+    "verified": 0,
+    "rate": 0.0,
+    "ci": [
+      0.0,
+      0.21531701192718142
+    ],
+    "reasons": {
+      "A different face appeared": 2,
+      "Timed out waiting for: turn your head to the left": 1,
+      "Timed out waiting for: turn your head to the right": 1,
+      "Timed out waiting for: smile": 5,
+      "No response to the prompt in time": 5
+    },
+    "reached_challenge": 14,
+    "duration_mean": null,
+    "fps_median": null,
+    "max_yaw_change": {
+      "n": 3,
+      "median": 9.51,
+      "max": 16.740000000000002
+    },
+    "max_parallax": {
+      "n": 3,
+      "median": 12.05,
+      "max": 17.15
+    }
+  },
+  "all_rounds": {
+    "sessions_recorded": 148,
+    "sessions_discarded": 1,
+    "discarded": {
+      "81f6189124": "participant reported their own face in view; the session completed a smile and a blink with 64 deg of parallax, which a phone photo cannot produce"
+    },
+    "attacks": 59,
+    "attacks_accepted": 0,
+    "attack_ci": [
+      0.0,
+      0.061131479784092065
+    ],
+    "attack_reasons": {
+      "A different face appeared": 6,
+      "Timed out waiting for: turn your head to the left": 9,
+      "Timed out waiting for: turn your head to the right": 5,
+      "Timed out waiting for: smile": 7,
+      "No response to the prompt in time": 29,
+      "Timed out waiting for: blink your eyes": 2,
+      "Face lost - stay in front of the camera": 1
+    },
+    "attacks_over_parallax_threshold": [
+      {
+        "round": "round1",
+        "id": "74e545f219",
+        "max_parallax": 17.15,
+        "reason": "A different face appeared"
+      },
+      {
+        "round": "round2",
+        "id": "42e8b2a436",
+        "max_parallax": 17.43,
+        "reason": "A different face appeared"
+      }
+    ],
+    "max_yaw_change": {
+      "n": 40,
+      "median": 7.255,
+      "max": 17.509999999999998
+    },
+    "max_parallax": {
+      "n": 40,
+      "median": 8.675,
+      "max": 17.43
     }
   }
 }

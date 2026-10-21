@@ -210,9 +210,8 @@ about 30, and needs faces at least ~40 px wide.
 ## Research paper and reproducibility
 
 The accompanying paper, *FaceGuard: Continuous Face Authentication With a Homography-Parallax Liveness Cue
-for Commodity Webcams*, is in [`paper/`](paper/): `faceguard.tex` is the 10-page article and
-`faceguard_supplement.tex` its supplementary material (Figs. S1-S8, Tables S1-S5), together with the figures
-and the generated result tables.
+for Commodity Webcams*, is in [`paper/`](paper/) (LaTeX source `faceguard.tex`, PDF, figures and the generated
+result tables).
 Every number in it is produced by the scripts in [`experiments/`](experiments/): results are written to
 `experiments/results/*.json` and `experiments/make_figures.py` turns them into the paper's figures and
 number macros. [`experiments/README.md`](experiments/README.md) lists each script, the datasets to download

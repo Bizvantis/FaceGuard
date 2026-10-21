@@ -1,8 +1,11 @@
-"""Summarize the real-world pilot study (results/realworld/*.jsonl) into results/realworld.json.
+"""Summarize the real-world evaluation (results/realworld/*.jsonl) into results/realworld.json.
 
-Protocol v1 trials (pilot_trials_protocol_v1.jsonl) are reported only as the pilot that motivated the fixes;
-all evaluation numbers come from protocol v2 trials (trials.jsonl). Attack trials that the participant marked
-as not clean (own face visible) were discarded at acquisition time.
+The evaluation ran in two rounds with the same test program. Round 1 (pilot_trials_protocol_v1.jsonl) used the
+earlier liveness protocol and exposed the faults that were then corrected; round 2 (trials.jsonl) used the
+corrected protocol. Both rounds are summarized: genuine-user rates are reported per round (the protocol differs),
+and the phone-screen attacks of both rounds are also pooled. Round-2 attack trials that the participant marked as
+not clean (own face visible) were discarded at acquisition time; round 1 had no such check, and its one affected
+trial is listed in INVALID_ROUND1 with the evidence.
 """
 
 from __future__ import annotations
@@ -16,6 +19,12 @@ import numpy as np
 from common import RESULTS, save_json
 
 R = RESULTS / "realworld"
+MIN_PERSISTENCE = {"guard_shoulder": 3.0}  # seconds an onlooker must be in view before the guard alerts
+# Round-1 attack trials that were not clean presentations (no clean-presentation check existed in round 1).
+INVALID_ROUND1 = {
+    "81f6189124": "participant reported their own face in view; the session completed a smile and a blink with "
+                  "64 deg of parallax, which a phone photo cannot produce",
+}
 
 
 def wilson(k, n, z=1.96):
@@ -85,14 +94,23 @@ def guard_summary(rows, kind):
                 "intruder_locks": sum(r["intruder_locks"] for r in rows), "absence_locks": sum(r["absence_locks"] for r in rows),
                 "shoulder_alerts": sum(r["shoulder_alerts"] for r in rows),
                 "longest_gap_s": max(r["longest_gap_s"] for r in rows)}
-    lat = [r["latency_s"] for r in rows if r["detected"] and r["latency_s"] is not None]
     # time from the beep (owner leaves / volunteer starts) to the decision, independent of which face was seen first
-    since = [r["t_reference_s"] + r["latency_s"] - r["t_event_s"] for r in rows
-             if r["detected"] and r["latency_s"] is not None and r["t_event_s"] is not None]
+    def since(r):
+        if not r["detected"] or r["latency_s"] is None or r["t_event_s"] is None:
+            return None
+        return r["t_reference_s"] + r["latency_s"] - r["t_event_s"]
+    # The shoulder-surfer rule needs an onlooker in view for MIN_PERSISTENCE seconds (guard.py shoulder_seconds), so an
+    # alert sooner than that after the cue means the volunteer was already in view before the cue: such a trial still
+    # counts as a detection but cannot time the response.
+    minimum = MIN_PERSISTENCE.get(kind, 0.0)
+    timed = [r for r in rows if since(r) is not None and since(r) >= minimum]
+    lat = [r["latency_s"] for r in timed]
+    s = [since(r) for r in timed]
     return {"trials": len(rows), "detected": sum(r["detected"] for r in rows), "detected_ci": wilson(sum(r["detected"] for r in rows), len(rows)),
+            "timed_trials": len(timed), "untimed_trials": sum(r["detected"] for r in rows) - len(timed),
             "latency_median": float(np.median(lat)) if lat else None, "latency_max": float(max(lat)) if lat else None,
             "latency_min": float(min(lat)) if lat else None,
-            "since_event_median": float(np.median(since)) if since else None,
+            "since_event_median": float(np.median(s)) if s else None,
             "subjects": sorted({r["subject"] for r in rows})}
 
 
@@ -133,6 +151,28 @@ def main():
         ev["bpcer_all_live"] = {"n": len(live_all), "rejected": k, "rate": k / len(live_all), "ci": wilson(k, len(live_all)),
                                 "subjects": sorted({r["subject"] for r in live_all})}
     out["evaluation_v2"] = ev
+    # round-1 attacks and all phone-screen attacks of both rounds
+    att1 = [r for r in blocks(v1, "phone_full", "owner") if r["id"] not in INVALID_ROUND1]
+    s1 = unlock_summary(att1, attack=True)
+    s1.update(turn_stats(att1))
+    out["round1_attacks"] = s1
+    att2 = [r for k in ("phone_full", "phone_turns", "phone_turns_noparallax") for r in blocks(v2, k, "owner")
+            if r.get("clean_presentation", True)]
+    pooled = att1 + att2
+    k = sum(r["verified"] for r in pooled)
+    ts = turn_stats(pooled)
+    over = []  # attacks whose tilted phone exceeded the parallax threshold (0.8 x 18 deg) during a turn challenge
+    for rnd, rows in (("round1", att1), ("round2", att2)):
+        for r in rows:
+            m = turn_stats([r])["max_parallax"]["max"]
+            if m is not None and m > 14.4:
+                over.append({"round": rnd, "id": r["id"], "max_parallax": m, "reason": r["reason"]})
+    out["all_rounds"] = {"sessions_recorded": len(v1) + len(v2), "sessions_discarded": len(INVALID_ROUND1),
+                         "discarded": INVALID_ROUND1, "attacks": len(pooled), "attacks_accepted": k,
+                         "attack_ci": wilson(k, len(pooled)), "attack_reasons": dict(Counter(r["reason"] or "passed" for r in pooled)),
+                         "attacks_over_parallax_threshold": over, **ts}
+    own2 = blocks(v2, "owner_live", "owner") + blocks(v2, "owner_turns", "owner")
+    out["evaluation_v2"]["owner_reasons"] = dict(Counter(r["reason"] or "passed" for r in own2))
     save_json("realworld", out)
     print(json.dumps(out, indent=1)[:4000])
 

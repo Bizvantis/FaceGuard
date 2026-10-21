@@ -192,6 +192,29 @@ def fisher_p(k1, n1, k2, n2):
     return float(fisher_exact([[k1, n1 - k1], [k2, n2 - k2]])[1])
 
 
+def holm(pvals: dict) -> dict:
+    """Holm step-down adjustment of a family of p-values (strong control of the family-wise error rate)."""
+    keys = sorted(pvals, key=pvals.get)
+    m, out, run = len(keys), {}, 0.0
+    for i, k in enumerate(keys):
+        run = max(run, min(1.0, (m - i) * pvals[k]))
+        out[k] = run
+    return out
+
+
+def newcombe(k1, n1, k2, n2):
+    """Difference of two proportions p1 - p2 with the 95% Newcombe hybrid-score interval (method 10)."""
+    p1, p2 = k1 / n1, k2 / n2
+    l1, u1 = wilson(k1, n1)
+    l2, u2 = wilson(k2, n2)
+    d = p1 - p2
+    return d, d - np.sqrt((p1 - l1) ** 2 + (u2 - p2) ** 2), d + np.sqrt((u1 - p1) ** 2 + (p2 - l2) ** 2)
+
+
+def pfmt(p):
+    return "<0.001" if p < 0.001 else f"{p:.2f}" if p >= 0.1 else f"{p:.3f}"
+
+
 def fig_liveness(liv):
     sweep = liv["tau_sweep"]
     fig, axes = plt.subplots(1, 2, figsize=(DCOL, 2.05))
@@ -395,10 +418,18 @@ def macros(res: dict) -> str:
                  "pUniFullNoTiming": (A["universal/full"], A["universal/no_timing"]),
                  "pUniFullNeither": (A["universal/full"], A["universal/no_order_no_timing"]),
                  "pRepFullNoOrder": (A["replay/full"], A["replay/no_order_enforcement"]),
-                 "pUniShortWindow": (A["universal/full"], A["universal/window_2_5"])}
+                 "pUniShortWindow": (A["universal/full"], A["universal/window_2_5"]),
+                 # primary hypothesis H1: the parallax gate stops tilted flat prints in the turn-only protocol
+                 "pPrintGate": (A["flat/turns_only"], A["flat/turns_only_no_parallax"])}
+        # one family of eight comparisons: Holm-adjusted p-values and risk differences with 95% Newcombe intervals
+        raw = {name: fisher_p(*cnt(a), *cnt(b)) for name, (a, b) in tests.items()}
+        adj = holm(raw)
         for name, (a, b) in tests.items():
-            p = fisher_p(*cnt(a), *cnt(b))
-            m(name, "<0.001" if p < 0.001 else f"{p:.2f}" if p >= 0.1 else f"{p:.3f}")
+            m(name, pfmt(adj[name]), "{}")
+            m(name + "Raw", pfmt(raw[name]), "{}")
+            d, lo, hi = newcombe(*cnt(a), *cnt(b))
+            m("eff" + name[1:], f"{100 * d:+.1f} [{100 * lo:+.1f}, {100 * hi:+.1f}]".replace("-", "$-$"), "{}")
+        m("holmFamily", len(tests), "{}")
         S = liv.get("sensitivity", {})
         for k, tag in (("react_0.5", "ReactFast"), ("react_1.0", "ReactSlow"), ("react_1.4", "ReactSlowest"),
                        ("amp_22", "AmpSmall"), ("amp_38", "AmpLarge"), ("confusion_0.1", "ConfTen"), ("confusion_0.2", "ConfTwenty")):
@@ -515,10 +546,18 @@ def recognition_baselines(base, lfw):
         acc = f"{100 * r['accuracy']:.2f}$\\pm${100 * r['std']:.2f}"
         rows.append(f"{label} & {mb:.1f} & {ms} & {acc} & {r['auc']:.4f} & {100 * r['eer']:.2f} & "
                     f"{100 * r['tar_at_far_1e-2']:.2f} & {100 * r['tar_at_far_1e-3']:.2f} \\\\")
-    def p(a, b):
-        v = float(ttest_rel(R[a]["fold_acc"], R[b]["fold_acc"]).pvalue)
-        return "<0.001" if v < 0.001 else f"{v:.2f}" if v >= 0.1 else f"{v:.3f}"
-    macros = {"pTta": p("sface", "sface_no_tta"), "pSfaceMbf": p("sface", "arcface_mbf"), "pSfaceRfifty": p("sface", "arcface_r50")}
+    # one family of three paired t-tests over the ten identity-disjoint LFW folds: Holm-adjusted p-values and the mean
+    # accuracy difference (percentage points) with its 95% t interval
+    from scipy.stats import t as tdist
+    comps = {"pTta": ("sface", "sface_no_tta"), "pSfaceMbf": ("sface", "arcface_mbf"), "pSfaceRfifty": ("sface", "arcface_r50")}
+    raw = {k: float(ttest_rel(R[a]["fold_acc"], R[b]["fold_acc"]).pvalue) for k, (a, b) in comps.items()}
+    adj = holm(raw)
+    macros = {}
+    for k, (a, b) in comps.items():
+        diff = 100 * (np.array(R[a]["fold_acc"]) - np.array(R[b]["fold_acc"]))
+        half = tdist.ppf(0.975, len(diff) - 1) * diff.std(ddof=1) / np.sqrt(len(diff))
+        macros[k] = pfmt(adj[k])
+        macros["eff" + k[1:]] = f"{diff.mean():+.2f} [{diff.mean() - half:+.2f}, {diff.mean() + half:+.2f}]".replace("-", "$-$")
     for key, tag in (("arcface_mbf", "Mbf"), ("arcface_r50", "Rfifty")):
         macros[f"base{tag}Acc"] = f"{100 * R[key]['accuracy']:.2f}"
         macros[f"base{tag}TarThree"] = f"{100 * R[key]['tar_at_far_1e-3']:.2f}"
@@ -597,19 +636,27 @@ def pilot_tables(p):
     ci = lambda c: f"{100 * c[0]:.0f}--{100 * c[1]:.0f}"  # noqa: E731
     rows = []
 
-    def unlock(key, label, attack=False):
-        r = ev.get(key)
-        if not r:
-            return
+    def row(label, r, attack=False):
         ok = r["verified"]
-        rate = ok / r["n"]
         what = "accepted" if attack else "passed"
-        rows.append(f"{label} & {r['n']} & {ok} {what} ({pc(rate)}\\%; {ci(r['ci'])}) \\\\")
+        rows.append(f"{label} & {r['n']} & {ok} {what} ({pc(ok / r['n'])}\\%; {ci(r['ci'])}) \\\\")
+
+    def unlock(key, label, attack=False):
+        if ev.get(key):
+            row(label, ev[key], attack)
+    a1, both = p.get("round1_attacks"), p.get("all_rounds")
+    if a1:
+        rows.append("\\multicolumn{3}{@{}l}{\\emph{Round 1, earlier protocol}} \\\\")
+        row("Owner, full and turns only", v1["owner_live"])
+        row("Phone photo vs.\\ full protocol", a1, True)
+        rows.append("\\midrule")
+        rows.append("\\multicolumn{3}{@{}l}{\\emph{Round 2, corrected protocol}} \\\\")
     unlock("owner_live", "Owner, full protocol")
     unlock("owner_turns", "Owner, turns only")
     vol = ev.get("volunteer_live")
     if vol:
-        rows.append(f"Volunteer, full protocol (impostor) & {vol['n']} & {vol['false_accepts']} accepted; live in "
+        who = "Volunteer" if len(vol["subjects"]) == 1 else f"{len(vol['subjects'])} volunteers"
+        rows.append(f"{who}, full protocol (impostor) & {vol['n']} & {vol['false_accepts']} accepted; live in "
                     f"{round(vol['live_rate'] * vol['n'])} of {vol['n']} \\\\")
     rows.append("\\midrule")
     unlock("phone_full", "Phone photo vs.\\ full protocol", True)
@@ -624,7 +671,14 @@ def pilot_tables(p):
                        ("guard_shoulder", "Shoulder-surfer: alert"), ("guard_lockwatch", "Locked PC: photograph")):
         r = ev.get(key)
         if r:
-            rows.append(f"{label} & {r['trials']} & {r['detected']} of {r['trials']}, {r['since_event_median']:.1f}~s after the cue \\\\")
+            timed = r.get("timed_trials", r["trials"])
+            med = "" if timed == 1 else "median "
+            note = "\\textsuperscript{a}" if r.get("untimed_trials") else ""  # explained in the table footnote
+            rows.append(f"{label} & {r['trials']} & {r['detected']} of {r['trials']}, {med}{r['since_event_median']:.1f}~s{note} \\\\")
+    if both:
+        rows.append("\\midrule")
+        rows.append(f"Phone photo, both rounds & {both['attacks']} & {both['attacks_accepted']} accepted "
+                    f"({pc(both['attacks_accepted'] / both['attacks'])}\\%; {ci(both['attack_ci'])}) \\\\")
     o = v1["owner_live"]
     mac = {"rwPilotTrials": str(v1["trials"]), "rwPilotOwner": str(o["n"]), "rwPilotOwnerPass": str(o["verified"]),
            "rwPilotDiff": str(o["reasons"].get("A different face appeared", 0)),
@@ -636,10 +690,13 @@ def pilot_tables(p):
     mac.update({"rwOwnerN": str(ol["n"] + ot["n"]), "rwOwnerPass": str(ol["verified"] + ot["verified"]),
                 "rwFps": f"{ol['fps_median']:.0f}", "rwOwnerSim": f"{ol['similarity_median']:.2f}",
                 "rwAttN": str(n_att), "rwAttAcc": str(sum(a["verified"] for a in att)),
+                "rwAttTurnsGate": str(ev["phone_turns"]["n"]) if "phone_turns" in ev else "0",
+                "rwAttTurnsNoGate": str(ev["phone_turns_noparallax"]["n"]) if "phone_turns_noparallax" in ev else "0",
                 "rwAttYawMax": f"{max(a['max_yaw_change']['max'] for a in att if a['max_yaw_change']['max'] is not None):.1f}",
                 "rwAttParMax": f"{max(a['max_parallax']['max'] for a in att if a['max_parallax']['max'] is not None):.1f}",
                 "rwOwnerParMed": f"{ol['max_parallax']['median']:.0f}",
                 "rwVolN": str(vol["n"]) if vol else "0", "rwVolFa": str(vol["false_accepts"]) if vol else "0",
+                "rwVolPeople": str(len(vol["subjects"])) if vol else "0",
                 "rwVolSim": f"{vol['max_similarity_to_owner']:.2f}" if vol else "--",
                 "rwVolLive": str(round(vol["live_rate"] * vol["n"])) if vol else "0",
                 "rwAttUpper": f"{100 * wilson(0, n_att)[1]:.0f}"})
@@ -649,13 +706,206 @@ def pilot_tables(p):
             mac[f"rw{tag}Beep"] = f"{ev[key]['since_event_median']:.1f}"
     if "guard_desk" in ev:
         mac["rwDeskS"] = f"{ev['guard_desk']['hours'] * 3600:.0f}"
+    if vol:
+        vr = vol["reasons"]
+        mac.update({"rwVolFailSmile": str(vr.get("Timed out waiting for: smile", 0)),
+                    "rwVolFailWrong": str(vr.get("Wrong action - follow the prompts in the order shown", 0)),
+                    "rwVolFailLate": str(vr.get("No response to the prompt in time", 0)),
+                    "rwVolFailIdent": str(vr.get("A different face appeared", 0))})
+    orr = ev.get("owner_reasons", {})
+    mac.update({"rwOwnerFailIdent": str(orr.get("A different face appeared", 0)),
+                "rwOwnerFailLate": str(orr.get("No response to the prompt in time", 0))})
+    for key, tag in (("guard_intruder", "Intr"), ("guard_shoulder", "Shld"), ("guard_lockwatch", "Lockw")):
+        if key in ev:
+            mac[f"rw{tag}N"] = str(ev[key]["trials"])
+            mac[f"rw{tag}Timed"] = str(ev[key].get("timed_trials", ev[key]["trials"]))
+            mac[f"rw{tag}Untimed"] = str(ev[key].get("untimed_trials", 0))
+    if both:
+        ar = both["attack_reasons"]
+        turn_to = sum(v for k, v in ar.items() if k.startswith("Timed out waiting for: turn"))
+        expr_to = sum(v for k, v in ar.items() if k.startswith("Timed out waiting for:") and "turn" not in k)
+        mac.update({"rwAttNoResp": str(ar.get("No response to the prompt in time", 0)), "rwAttTurnTO": str(turn_to),
+                    "rwAttExprTO": str(expr_to), "rwAttIdent": str(ar.get("A different face appeared", 0)),
+                    "rwAttLost": str(ar.get("Face lost - stay in front of the camera", 0)),
+                    "rwAttOverPar": str(len(both["attacks_over_parallax_threshold"]))})
+    if a1 and both:
+        mac.update({"rwRoundOneAttN": str(a1["n"]), "rwAllSessions": str(both["sessions_recorded"]),
+                    "rwDiscarded": str(both["sessions_discarded"]), "rwAllAttN": str(both["attacks"]),
+                    "rwAllAttAcc": str(both["attacks_accepted"]), "rwAllAttUpper": f"{100 * both['attack_ci'][1]:.0f}",
+                    "rwAllAttYawMax": f"{both['max_yaw_change']['max']:.1f}", "rwAllAttParMax": f"{both['max_parallax']['max']:.1f}",
+                    "rwPilotOwnerRate": pc(v1["owner_live"]["verified"] / v1["owner_live"]["n"])})
     return "\n".join(rows) + "\n", mac
+
+
+def fig_parallax_real(pr):
+    """Median (marker) and 90th percentile (bar end) of |parallax| per |apparent yaw| bin: real vs simulated."""
+    centers = np.array([2.5, 7.5, 12.5, 17.5])
+    bins = pr["bins"]
+    series = [("Phone screen, real", pr["real"]["phone"]["bins"], C["orange"], "-", "o", -0.6),
+              ("Head turns, real", pr["real"]["owner"]["bins"], C["blue"], "-", "s", -0.2),
+              ("Flat print, sim. 1 px", pr["noise"]["1.0"]["flat"], C["muted"], "--", "v", 0.2),
+              ("Flat print, sim. 2 px", pr["noise"]["2.0"]["flat"], C["ink2"], ":", "^", 0.6)]
+    fig, ax = plt.subplots(figsize=(COL, 2.05))
+    for label, b, col, ls, mk, dx in series:
+        pts = [(c, b[k]["p50"], b[k]["p90"]) for c, k in zip(centers, bins) if b.get(k)]
+        x = np.array([p[0] for p in pts]) + dx
+        med = np.array([p[1] for p in pts])
+        up = np.array([p[2] for p in pts]) - med
+        ax.errorbar(x, med, yerr=[np.zeros_like(up), up], color=col, ls=ls, marker=mk, ms=3.2, lw=1.0,
+                    elinewidth=0.6, capsize=1.5, label=label)
+    ax.axhline(14.4, color=C["ink"], lw=0.6, ls=(0, (4, 2)))
+    ax.text(0.4, 13.7, "parallax threshold 14.4$^\\circ$", fontsize=6.3, color=C["ink"], va="top")
+    ax.set_xlabel("Apparent yaw change $|\\hat\\theta-\\hat\\theta_0|$ (deg, binned)")
+    ax.set_ylabel("Parallax $|\\psi|$ (deg)")
+    ax.set_xticks([0, 5, 10, 15, 20])
+    ax.set_xlim(0, 20)
+    ax.legend(fontsize=6.2, loc="upper left", frameon=False)
+    save(fig, "fig_parallax_real")
+
+
+def extra_macros(le, pr, boot, dbb):
+    """Macros of the reviewer-revision analyses (exp_liveness_extra, exp_parallax_real, exp_bootstrap,
+    exp_demographics_backbones); each argument may be None if that script has not been run."""
+    m = {}
+    p1 = lambda x: f"{100 * x:.1f}"  # noqa: E731
+    p2 = lambda x: f"{100 * x:.2f}"  # noqa: E731
+    if le:
+        for key, tag in (("live/full", "Live"), ("live/turns_only", "LiveTurns"), ("flat/turns_only", "FlatGate"),
+                         ("flat/turns_only_no_parallax", "FlatNoGate"), ("bent_R40/turns_only", "BentTurns"),
+                         ("replay/full", "Rep"), ("universal/full", "Uni"), ("universal/no_order_no_timing", "UniNeither")):
+            r = le["repeated"][key]
+            m[f"ms{tag}Mean"], m[f"ms{tag}Sd"] = p2(r["mean"]), p2(r["sd"])
+            m[f"ms{tag}Lo"], m[f"ms{tag}Hi"] = p2(r["cluster_ci"][0]), p2(r["cluster_ci"][1])
+        m["msSeeds"], m["msFaces"] = str(len(le["seeds"])), str(le["faces"])
+        m["msPrintZero"] = "{:,}".format(sum(le["repeated"][k]["sessions"] for k in ("flat/full", "bent_R40/full")))
+        A = le["adaptive"]
+        for mode, tag in (("prompt_follow_human", "Human"), ("prompt_follow_auto", "Auto"), ("blind_edit", "Blind")):
+            m[f"ar{tag}Full"], m[f"ar{tag}Turns"] = p1(A[f"{mode}/full"]["pass_rate"]), p1(A[f"{mode}/turns_only"]["pass_rate"])
+        m["arN"] = f"{A['blind_edit/full']['n']:,}"
+        T = le["thresholds"]
+        flat = [v["pass_rate"] for k, v in T.items() if k.endswith("/flat")]
+        bent = [v["pass_rate"] for k, v in T.items() if k.endswith("/bent_R40")]
+        bp = [v["frr"] for k, v in T.items() if "/live" in k]
+        m["thrFlatMax"], m["thrBentMin"], m["thrBentMax"] = p1(max(flat)), p1(min(bent)), p1(max(bent))
+        m["thrBpcerMin"], m["thrBpcerMax"] = p1(min(bp)), p1(max(bp))
+        N = le["noise"]
+        for nz, tag in (("2.0", "Two"), ("3.0", "Three"), ("4.0", "Four")):
+            m[f"nzFlat{tag}"] = p1(N[f"{nz}/flat_turns"]["pass_rate"])
+            m[f"nzFlatNoGate{tag}"] = p1(N[f"{nz}/flat_turns_no_parallax"]["pass_rate"])
+            m[f"nzBpcer{tag}"] = p1(N[f"{nz}/live_full"]["frr"])
+    if pr:
+        for k, tag in (("phone", "Phone"), ("owner", "Owner")):
+            r = pr["real"][k]
+            m[f"pr{tag}Frames"], m[f"pr{tag}Sessions"] = f"{r['frames']:,}", str(r["sessions"])
+            m[f"pr{tag}Slope"], m[f"pr{tag}R"] = f"{r['slope_5_20']:.2f}", f"{r['pearson_5_20']:.2f}"
+            for b, bt in (("5-10", "Five"), ("10-15", "Ten"), ("15-20", "Fifteen")):
+                m[f"pr{tag}Med{bt}"] = f"{r['bins'][b]['p50']:.1f}"
+        ratio = pr['real']['phone']['slope_5_20'] / pr['real']['owner']['slope_5_20']
+        m["prSlopeRatio"], m["prSlopeRatioPct"] = f"{ratio:.2f}", f"{100 * ratio:.0f}"
+        f1 = pr["noise"]["1.0"]["flat"]
+        m["prSimFlatPninety"] = f"{max(v['p90'] for v in f1.values() if v):.1f}"
+        m["prEffNoise"] = f"{pr['effective_noise_px']:.0f}"
+        m["prSlopeFiveNoise"] = f"{pr['noise']['5.0']['flat_slope_5_20']:.2f}"
+        m["prPninetyFiveNoise"] = f"{pr['noise']['5.0']['flat']['0-5']['p90']:.1f}"
+        m["prPhonePninetySmall"] = f"{pr['real']['phone']['bins']['0-5']['p90']:.1f}"
+        d = pr["distortion_summary"]
+        m["pdCams"], m["pdCentreMax"] = str(d["cameras"]), f"{d['flat_max_centre_max']:.2f}"
+        m["pdOffMax"], m["pdOffMedian"] = f"{d['flat_max_off_centre_max']:.2f}", f"{d['flat_max_off_centre_median']:.2f}"
+    if boot:
+        lv = boot["lfw"]["levels"]
+        for k, tag in (("relaxed", "Relaxed"), ("balanced", "Balanced"), ("strict", "Strict"), ("update_gate", "Gate")):
+            m[f"bsFar{tag}Lo"], m[f"bsFar{tag}Hi"] = f"{100 * lv[k]['far_ci'][0]:.4f}", f"{100 * lv[k]['far_ci'][1]:.4f}"
+            m[f"bsFrr{tag}Lo"], m[f"bsFrr{tag}Hi"] = p2(lv[k]["frr_ci"][0]), p2(lv[k]["frr_ci"][1])
+        m["bsPeople"], m["bsB"] = f"{boot['lfw']['people']:,}", f"{boot['bootstrap']:,}"
+        # design effect of the impostor pairs at the balanced level: identity-level vs. binomial standard error;
+        # it scales the rule-of-three bound of the zero-event update gate to the effective number of pairs
+        b, n_imp = lv["balanced"], boot["lfw"]["impostor_pairs"]
+        se_boot = (b["far_ci"][1] - b["far_ci"][0]) / 3.92
+        se_bin = np.sqrt(b["far"] * (1 - b["far"]) / n_imp)
+        deff = (se_boot / se_bin) ** 2
+        bound = 3.0 * deff / n_imp
+        exp = int(np.floor(np.log10(bound)))
+        m["bsDeff"], m["bsWidthRatio"] = f"{deff:.0f}", f"{np.sqrt(deff):.0f}"
+        m["bsGateBound"] = f"{bound / 10 ** exp:.0f}\\times10^{{{exp}}}"
+        mp = boot["mpii"]
+        for proto, ptag in (("pairwise", "Pair"), ("enrollment", "Enr")):
+            for k, tag in (("relaxed", "Relaxed"), ("balanced", "Balanced"), ("strict", "Strict")):
+                r = mp[proto][k]
+                m[f"bsMp{ptag}Far{tag}Lo"], m[f"bsMp{ptag}Far{tag}Hi"] = f"{100 * r['far_ci'][0]:.4f}", f"{100 * r['far_ci'][1]:.4f}"
+                m[f"bsMp{ptag}Frr{tag}Lo"], m[f"bsMp{ptag}Frr{tag}Hi"] = p2(r["frr_ci"][0]), p2(r["frr_ci"][1])
+    if dbb:
+        for bb, btag in (("sface", "Sf"), ("arcface_mbf", "Mbf"), ("arcface_r50", "Rf")):
+            res = dbb["backbones"][bb]
+            m[f"db{btag}Thr"] = f"{res['thresholds']['fmr1e-4']:.3f}"
+            for attr in ("sex", "ethnicity"):
+                rat = res["attributes"][attr]["ratios/fmr1e-4"]
+                for g, v in rat.items():
+                    if g == "reference":
+                        continue
+                    t = f"db{btag}{g.capitalize()}"
+                    m[f"{t}Ratio"] = f"{v['ratio']:.1f}"
+                    m[f"{t}RatioLo"], m[f"{t}RatioHi"] = f"{v['ci'][0]:.1f}", f"{v['ci'][1]:.1f}"
+                m[f"db{btag}{attr.capitalize()}Ref"] = rat["reference"]
+        m["dbBalSex"] = "{:,}".format(dbb["backbones"]["sface"]["attributes"]["sex"]["balanced_people"])
+        m["dbBalEth"] = "{:,}".format(dbb["backbones"]["sface"]["attributes"]["ethnicity"]["balanced_people"])
+        m["dbB"] = f"{dbb['bootstrap']:,}"
+    return m
+
+
+def demo_bb_rows(dbb):
+    """Demographic table: SFace at the deployed threshold and all backbones at a matched FMR of 1e-4, with
+    identity-level (balanced) bootstrap intervals."""
+    f4 = lambda x, ci: f"{100 * x:.4f} [{100 * ci[0]:.4f}, {100 * ci[1]:.4f}]"  # noqa: E731
+    f2 = lambda x, ci: f"{100 * x:.2f} [{100 * ci[0]:.2f}, {100 * ci[1]:.2f}]"  # noqa: E731
+    B = dbb["backbones"]
+    rows = []
+    for attr, order in (("sex", ("male", "female")), ("ethnicity", ("white", "black", "asian"))):
+        for g in order:
+            s = B["sface"]["attributes"][attr]["groups"][g]
+            d = s["deployed_0.45"]
+            cells = [g.capitalize(), f"{s['people']:,}", f2(d["fnmr"], d["fnmr_ci"]), f4(d["fmr"], d["fmr_ci"])]
+            for bb in ("sface", "arcface_mbf", "arcface_r50"):
+                x = B[bb]["attributes"][attr]["groups"][g]["fmr1e-4"]
+                cells.append(f4(x["fmr"], x["fmr_ci"]))
+            rows.append(" & ".join(cells) + " \\\\")
+        if attr == "sex":
+            rows.append("\\midrule")
+    return "\n".join(rows) + "\n"
+
+
+def adaptation_macros(a):
+    """Macros for the template-adaptation experiment (exp_adaptation.py)."""
+    m, s = a["balanced/one_per_day"], a["balanced/no_rate_limit"]
+    pct = lambda x: f"{100 * x:.2f}"  # noqa: E731
+    return {"adUpdates": str(m["updates_total"]), "adUpdatesStress": str(s["updates_total"]),
+            "adStream": f"{m['stream_frames']:,}", "adProbes": f"{m['probes']:,}",
+            "adGenStatic": f"{m['static']['genuine_mean']:.3f}", "adGenAdapted": f"{m['adapted']['genuine_mean']:.3f}",
+            "adGenAdaptedStress": f"{s['adapted']['genuine_mean']:.3f}",
+            "adGenMinStatic": f"{m['static']['genuine_min']:.3f}", "adGenMinAdapted": f"{m['adapted']['genuine_min']:.3f}",
+            "adStrictTarStatic": pct(m["static"]["strict/tar"]), "adStrictTarAdapted": pct(m["adapted"]["strict/tar"]),
+            "adStrictTarStress": pct(s["adapted"]["strict/tar"]),
+            "adImpMaxStatic": f"{m['static']['impostor_max']:.3f}", "adImpMaxAdapted": f"{m['adapted']['impostor_max']:.3f}",
+            "adImpMaxStress": f"{s['adapted']['impostor_max']:.3f}",
+            "adFaBal": str(m["adapted"]["balanced/false_accepts"]), "adFaBalStress": str(s["adapted"]["balanced/false_accepts"]),
+            "adRelFarStatic": f"{100 * m['static']['relaxed/far']:.1f}", "adRelFarAdapted": f"{100 * m['adapted']['relaxed/far']:.1f}",
+            "adRelFarStress": f"{100 * s['adapted']['relaxed/far']:.1f}",
+            "adPoisonOffered": f"{m['poisoning']['impostor_frames_offered']:,}",
+            "adPoisonAdded": str(m["poisoning"]["impostor_samples_added"]),
+            "adPoisonMax": f"{m['poisoning']['impostor_top3_max']:.3f}",
+            "adEligible": f"{100 * a['eligible_fraction']:.0f}"}
 
 
 def main():
     res = {n: load(n) for n in ("lfw", "olivetti", "robustness", "parallax", "pose", "liveness", "guard", "guard_diag", "runtime",
-                                "baselines", "mpii", "demographics", "realworld")}
-    newmac = {}
+                                "baselines", "mpii", "demographics", "realworld", "adaptation", "liveness_extra", "parallax_real",
+                                "bootstrap", "demographics_backbones")}
+    newmac = adaptation_macros(res["adaptation"]) if res["adaptation"] else {}
+    newmac.update(extra_macros(res["liveness_extra"], res["parallax_real"], res["bootstrap"], res["demographics_backbones"]))
+    if res["demographics_backbones"]:  # identity-level, balanced, three backbones (replaces the pair-level table)
+        (GEN / "tab_demo_bb.tex").write_text("\\newcommand{\\DemoBbRows}{%\n" + demo_bb_rows(res["demographics_backbones"]) + "}\n",
+                                             encoding="utf-8")
+    if res["parallax_real"]:
+        fig_parallax_real(res["parallax_real"])
     for key, fn, fname, macro in (("mpii", mpii_tables, "tab_mpii.tex", "MpiiRows"), ("demographics", demo_tables, "tab_demo.tex", "DemoRows"),
                                   ("realworld", pilot_tables, "tab_pilot.tex", "PilotRows")):
         if res[key]:

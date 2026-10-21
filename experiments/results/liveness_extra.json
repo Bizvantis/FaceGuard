@@ -1,0 +1,1300 @@
+{
+  "seeds": [
+    1001,
+    1002,
+    1003,
+    1004,
+    1005
+  ],
+  "faces": 150,
+  "repeated": {
+    "live/full": {
+      "metric": "BPCER",
+      "per_seed": [
+        0.018000000000000016,
+        0.008000000000000007,
+        0.015000000000000013,
+        0.01200000000000001,
+        0.016000000000000014
+      ],
+      "mean": 0.013800000000000012,
+      "sd": 0.003898717737923589,
+      "pooled": 0.0138,
+      "cluster_ci": [
+        0.01088673787678995,
+        0.01684130433520252
+      ],
+      "faces": 150,
+      "sessions": 5000
+    },
+    "live/turns_only": {
+      "metric": "BPCER",
+      "per_seed": [
+        0.007000000000000006,
+        0.008000000000000007,
+        0.01200000000000001,
+        0.010000000000000009,
+        0.013000000000000012
+      ],
+      "mean": 0.010000000000000009,
+      "sd": 0.002549509756796395,
+      "pooled": 0.01,
+      "cluster_ci": [
+        0.007199891092959937,
+        0.01301231996943623
+      ],
+      "faces": 150,
+      "sessions": 5000
+    },
+    "flat/full": {
+      "metric": "APCER",
+      "per_seed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mean": 0.0,
+      "sd": 0.0,
+      "pooled": 0.0,
+      "cluster_ci": [
+        0.0,
+        0.0
+      ],
+      "faces": 150,
+      "sessions": 5000
+    },
+    "bent_R40/full": {
+      "metric": "APCER",
+      "per_seed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mean": 0.0,
+      "sd": 0.0,
+      "pooled": 0.0,
+      "cluster_ci": [
+        0.0,
+        0.0
+      ],
+      "faces": 150,
+      "sessions": 5000
+    },
+    "flat/turns_only": {
+      "metric": "APCER",
+      "per_seed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.001
+      ],
+      "mean": 0.0002,
+      "sd": 0.00044721359549995795,
+      "pooled": 0.0002,
+      "cluster_ci": [
+        0.0,
+        0.0006075426473684015
+      ],
+      "faces": 150,
+      "sessions": 5000
+    },
+    "flat/turns_only_no_parallax": {
+      "metric": "APCER",
+      "per_seed": [
+        0.401,
+        0.395,
+        0.382,
+        0.377,
+        0.4
+      ],
+      "mean": 0.391,
+      "sd": 0.010885770528538629,
+      "pooled": 0.391,
+      "cluster_ci": [
+        0.3735837342865306,
+        0.4091365021960703
+      ],
+      "faces": 150,
+      "sessions": 5000
+    },
+    "bent_R40/turns_only": {
+      "metric": "APCER",
+      "per_seed": [
+        0.942,
+        0.928,
+        0.943,
+        0.945,
+        0.941
+      ],
+      "mean": 0.9398,
+      "sd": 0.006760177512462186,
+      "pooled": 0.9398,
+      "cluster_ci": [
+        0.9286857427020052,
+        0.9504321665296046
+      ],
+      "faces": 150,
+      "sessions": 5000
+    },
+    "replay/full": {
+      "metric": "APCER",
+      "per_seed": [
+        0.05375,
+        0.07375,
+        0.08125,
+        0.07125,
+        0.075
+      ],
+      "mean": 0.071,
+      "sd": 0.01032291141103129,
+      "pooled": 0.071,
+      "cluster_ci": [
+        0.06351747893591458,
+        0.07832066149096134
+      ],
+      "faces": 150,
+      "sessions": 4000
+    },
+    "universal/full": {
+      "metric": "APCER",
+      "per_seed": [
+        0.15733333333333333,
+        0.14733333333333334,
+        0.14533333333333334,
+        0.16,
+        0.13666666666666666
+      ],
+      "mean": 0.14933333333333332,
+      "sd": 0.00946337971105226,
+      "pooled": 0.14933333333333335,
+      "cluster_ci": [
+        0.14209895300479328,
+        0.15652801042030878
+      ],
+      "faces": 150,
+      "sessions": 7500
+    },
+    "universal/no_order_no_timing": {
+      "metric": "APCER",
+      "per_seed": [
+        0.7633333333333333,
+        0.77,
+        0.7726666666666666,
+        0.7646666666666667,
+        0.782
+      ],
+      "mean": 0.7705333333333334,
+      "sd": 0.0074595203897063304,
+      "pooled": 0.7705333333333333,
+      "cluster_ci": [
+        0.7603855078470394,
+        0.7804077215980991
+      ],
+      "faces": 150,
+      "sessions": 7500
+    }
+  },
+  "adaptive": {
+    "prompt_follow_human/full": {
+      "n": 1000,
+      "pass_rate": 0.883,
+      "passed": 883
+    },
+    "prompt_follow_human/turns_only": {
+      "n": 1000,
+      "pass_rate": 0.822,
+      "passed": 822
+    },
+    "prompt_follow_auto/full": {
+      "n": 1000,
+      "pass_rate": 0.897,
+      "passed": 897
+    },
+    "prompt_follow_auto/turns_only": {
+      "n": 1000,
+      "pass_rate": 0.85,
+      "passed": 850
+    },
+    "blind_edit/full": {
+      "n": 1000,
+      "pass_rate": 0.023,
+      "passed": 23
+    },
+    "blind_edit/turns_only": {
+      "n": 1000,
+      "pass_rate": 0.0,
+      "passed": 0
+    }
+  },
+  "thresholds": {
+    "frac_0.6/flat": {
+      "n": 1000,
+      "pass_rate": 0.0,
+      "passed": 0
+    },
+    "frac_0.6/bent_R40": {
+      "n": 1000,
+      "pass_rate": 0.993,
+      "passed": 993
+    },
+    "frac_0.6/live_turns": {
+      "n": 1000,
+      "frr": 0.007000000000000006,
+      "time_mean": 4.218277945619328,
+      "time_median": 3.999999999999994,
+      "time_p95": 5.999999999999987,
+      "fail_reasons": {
+        "Wrong action - follow the prompts in the order shown": 7
+      },
+      "time_hist": [
+        0,
+        0,
+        43,
+        548,
+        240,
+        114,
+        27,
+        13,
+        7,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "frac_0.6/live_full": {
+      "n": 1000,
+      "frr": 0.01200000000000001,
+      "time_mean": 4.016700404858294,
+      "time_median": 3.7499999999999947,
+      "time_p95": 5.749999999999988,
+      "fail_reasons": {
+        "Timed out waiting for": 3,
+        "No response to the prompt in time": 9
+      },
+      "time_hist": [
+        0,
+        0,
+        85,
+        582,
+        223,
+        74,
+        14,
+        5,
+        2,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "frac_0.7/flat": {
+      "n": 1000,
+      "pass_rate": 0.001,
+      "passed": 1
+    },
+    "frac_0.7/bent_R40": {
+      "n": 1000,
+      "pass_rate": 0.982,
+      "passed": 982
+    },
+    "frac_0.7/live_turns": {
+      "n": 1000,
+      "frr": 0.01200000000000001,
+      "time_mean": 4.24443319838056,
+      "time_median": 3.999999999999994,
+      "time_p95": 6.249999999999986,
+      "fail_reasons": {
+        "Wrong action - follow the prompts in the order shown": 11,
+        "Timed out waiting for": 1
+      },
+      "time_hist": [
+        0,
+        0,
+        47,
+        542,
+        220,
+        116,
+        41,
+        17,
+        3,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "frac_0.7/live_full": {
+      "n": 1000,
+      "frr": 0.014000000000000012,
+      "time_mean": 3.984279918864091,
+      "time_median": 3.7499999999999947,
+      "time_p95": 5.687499999999988,
+      "fail_reasons": {
+        "Wrong action - follow the prompts in the order shown": 3,
+        "No response to the prompt in time": 4,
+        "Timed out waiting for": 7
+      },
+      "time_hist": [
+        0,
+        0,
+        76,
+        602,
+        214,
+        70,
+        18,
+        5,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "frac_0.8/flat": {
+      "n": 1000,
+      "pass_rate": 0.0,
+      "passed": 0
+    },
+    "frac_0.8/bent_R40": {
+      "n": 1000,
+      "pass_rate": 0.951,
+      "passed": 951
+    },
+    "frac_0.8/live_turns": {
+      "n": 1000,
+      "frr": 0.01200000000000001,
+      "time_mean": 4.165738866396754,
+      "time_median": 3.7499999999999947,
+      "time_p95": 5.999999999999987,
+      "fail_reasons": {
+        "Wrong action - follow the prompts in the order shown": 11,
+        "Timed out waiting for": 1
+      },
+      "time_hist": [
+        0,
+        0,
+        44,
+        576,
+        224,
+        104,
+        22,
+        14,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "frac_0.8/live_full": {
+      "n": 1000,
+      "frr": 0.01200000000000001,
+      "time_mean": 3.9972165991902773,
+      "time_median": 3.7499999999999947,
+      "time_p95": 5.4999999999999885,
+      "fail_reasons": {
+        "No response to the prompt in time": 4,
+        "Timed out waiting for": 6,
+        "Wrong action - follow the prompts in the order shown": 2
+      },
+      "time_hist": [
+        0,
+        0,
+        74,
+        601,
+        224,
+        66,
+        14,
+        6,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "frac_0.9/flat": {
+      "n": 1000,
+      "pass_rate": 0.0,
+      "passed": 0
+    },
+    "frac_0.9/bent_R40": {
+      "n": 1000,
+      "pass_rate": 0.871,
+      "passed": 871
+    },
+    "frac_0.9/live_turns": {
+      "n": 1000,
+      "frr": 0.015000000000000013,
+      "time_mean": 4.27081218274111,
+      "time_median": 3.999999999999994,
+      "time_p95": 6.249999999999986,
+      "fail_reasons": {
+        "Wrong action - follow the prompts in the order shown": 12,
+        "Timed out waiting for": 3
+      },
+      "time_hist": [
+        0,
+        0,
+        30,
+        551,
+        227,
+        116,
+        39,
+        17,
+        2,
+        0,
+        1,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "frac_0.9/live_full": {
+      "n": 1000,
+      "frr": 0.010000000000000009,
+      "time_mean": 4.051262626262619,
+      "time_median": 3.7499999999999947,
+      "time_p95": 5.749999999999988,
+      "fail_reasons": {
+        "Timed out waiting for": 5,
+        "No response to the prompt in time": 4,
+        "Wrong action - follow the prompts in the order shown": 1
+      },
+      "time_hist": [
+        0,
+        0,
+        68,
+        596,
+        206,
+        88,
+        19,
+        11,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "frac_1.0/flat": {
+      "n": 1000,
+      "pass_rate": 0.0,
+      "passed": 0
+    },
+    "frac_1.0/bent_R40": {
+      "n": 1000,
+      "pass_rate": 0.815,
+      "passed": 815
+    },
+    "frac_1.0/live_turns": {
+      "n": 1000,
+      "frr": 0.01100000000000001,
+      "time_mean": 4.32836198179979,
+      "time_median": 3.999999999999994,
+      "time_p95": 6.499999999999985,
+      "fail_reasons": {
+        "Wrong action - follow the prompts in the order shown": 11
+      },
+      "time_hist": [
+        0,
+        0,
+        32,
+        541,
+        225,
+        122,
+        44,
+        15,
+        5,
+        3,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "frac_1.0/live_full": {
+      "n": 1000,
+      "frr": 0.01100000000000001,
+      "time_mean": 3.9883720930232496,
+      "time_median": 3.7499999999999947,
+      "time_p95": 5.4999999999999885,
+      "fail_reasons": {
+        "Timed out waiting for": 5,
+        "No response to the prompt in time": 6
+      },
+      "time_hist": [
+        0,
+        0,
+        80,
+        605,
+        206,
+        73,
+        14,
+        9,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "tau_15/flat": {
+      "n": 1000,
+      "pass_rate": 0.0,
+      "passed": 0
+    },
+    "tau_15/bent_R40": {
+      "n": 1000,
+      "pass_rate": 0.983,
+      "passed": 983
+    },
+    "tau_15/live_turns": {
+      "n": 1000,
+      "frr": 0.01100000000000001,
+      "time_mean": 3.916329625884726,
+      "time_median": 3.7499999999999947,
+      "time_p95": 5.249999999999989,
+      "fail_reasons": {
+        "Wrong action - follow the prompts in the order shown": 10,
+        "No response to the prompt in time": 1
+      },
+      "time_hist": [
+        0,
+        0,
+        69,
+        647,
+        203,
+        54,
+        13,
+        2,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "tau_15/live_full": {
+      "n": 1000,
+      "frr": 0.008000000000000007,
+      "time_mean": 3.9032258064516068,
+      "time_median": 3.7499999999999947,
+      "time_p95": 5.249999999999989,
+      "fail_reasons": {
+        "Timed out waiting for": 3,
+        "Wrong action - follow the prompts in the order shown": 3,
+        "No response to the prompt in time": 2
+      },
+      "time_hist": [
+        0,
+        0,
+        87,
+        636,
+        194,
+        61,
+        9,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "tau_21/flat": {
+      "n": 1000,
+      "pass_rate": 0.0,
+      "passed": 0
+    },
+    "tau_21/bent_R40": {
+      "n": 1000,
+      "pass_rate": 0.84,
+      "passed": 840
+    },
+    "tau_21/live_turns": {
+      "n": 1000,
+      "frr": 0.015000000000000013,
+      "time_mean": 4.615228426395932,
+      "time_median": 4.249999999999993,
+      "time_p95": 7.199999999999971,
+      "fail_reasons": {
+        "Timed out waiting for": 4,
+        "Wrong action - follow the prompts in the order shown": 11
+      },
+      "time_hist": [
+        0,
+        0,
+        23,
+        440,
+        250,
+        166,
+        56,
+        33,
+        12,
+        2,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    "tau_21/live_full": {
+      "n": 1000,
+      "frr": 0.007000000000000006,
+      "time_mean": 4.215256797583074,
+      "time_median": 3.999999999999994,
+      "time_p95": 6.249999999999986,
+      "fail_reasons": {
+        "No response to the prompt in time": 3,
+        "Timed out waiting for": 4
+      },
+      "time_hist": [
+        0,
+        0,
+        59,
+        543,
+        219,
+        113,
+        41,
+        12,
+        5,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "noise": {
+    "1.0/flat_turns": {
+      "n": 1000,
+      "pass_rate": 0.0,
+      "passed": 0
+    },
+    "1.0/flat_turns_no_parallax": {
+      "n": 1000,
+      "pass_rate": 0.403,
+      "passed": 403
+    },
+    "1.0/live_turns": {
+      "n": 1000,
+      "frr": 0.01200000000000001,
+      "time_mean": 4.268471659919021,
+      "time_median": 3.999999999999994,
+      "time_p95": 5.999999999999987,
+      "fail_reasons": {
+        "Timed out waiting for": 3,
+        "Wrong action - follow the prompts in the order shown": 9
+      },
+      "time_hist": [
+        0,
+        0,
+        48,
+        542,
+        243,
+        113,
+        23,
+        12,
+        3,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "1.0/live_full": {
+      "n": 1000,
+      "frr": 0.015000000000000013,
+      "time_mean": 4.011167512690349,
+      "time_median": 3.7499999999999947,
+      "time_p95": 5.4999999999999885,
+      "fail_reasons": {
+        "No response to the prompt in time": 10,
+        "Timed out waiting for": 4,
+        "Wrong action - follow the prompts in the order shown": 1
+      },
+      "time_hist": [
+        0,
+        0,
+        72,
+        595,
+        215,
+        81,
+        14,
+        5,
+        1,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "2.0/flat_turns": {
+      "n": 1000,
+      "pass_rate": 0.012,
+      "passed": 12
+    },
+    "2.0/flat_turns_no_parallax": {
+      "n": 1000,
+      "pass_rate": 0.508,
+      "passed": 508
+    },
+    "2.0/live_turns": {
+      "n": 1000,
+      "frr": 0.030000000000000027,
+      "time_mean": 4.246134020618549,
+      "time_median": 3.999999999999994,
+      "time_p95": 5.999999999999987,
+      "fail_reasons": {
+        "Wrong action - follow the prompts in the order shown": 21,
+        "Timed out waiting for": 9
+      },
+      "time_hist": [
+        0,
+        0,
+        27,
+        518,
+        277,
+        106,
+        29,
+        11,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "2.0/live_full": {
+      "n": 1000,
+      "frr": 0.02400000000000002,
+      "time_mean": 4.0399590163934365,
+      "time_median": 3.7499999999999947,
+      "time_p95": 5.749999999999988,
+      "fail_reasons": {
+        "Timed out waiting for": 12,
+        "No response to the prompt in time": 4,
+        "Wrong action - follow the prompts in the order shown": 8
+      },
+      "time_hist": [
+        0,
+        0,
+        53,
+        594,
+        242,
+        64,
+        19,
+        3,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "3.0/flat_turns": {
+      "n": 1000,
+      "pass_rate": 0.041,
+      "passed": 41
+    },
+    "3.0/flat_turns_no_parallax": {
+      "n": 1000,
+      "pass_rate": 0.62,
+      "passed": 620
+    },
+    "3.0/live_turns": {
+      "n": 1000,
+      "frr": 0.07599999999999996,
+      "time_mean": 4.429383116883109,
+      "time_median": 4.249999999999993,
+      "time_p95": 6.249999999999986,
+      "fail_reasons": {
+        "Wrong action - follow the prompts in the order shown": 61,
+        "Timed out waiting for": 15
+      },
+      "time_hist": [
+        0,
+        0,
+        10,
+        432,
+        303,
+        129,
+        34,
+        9,
+        1,
+        1,
+        2,
+        0,
+        2,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "3.0/live_full": {
+      "n": 1000,
+      "frr": 0.049000000000000044,
+      "time_mean": 4.157728706624599,
+      "time_median": 3.999999999999994,
+      "time_p95": 5.749999999999988,
+      "fail_reasons": {
+        "Timed out waiting for": 9,
+        "Wrong action - follow the prompts in the order shown": 32,
+        "No response to the prompt in time": 8
+      },
+      "time_hist": [
+        0,
+        0,
+        31,
+        514,
+        303,
+        81,
+        17,
+        4,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "4.0/flat_turns": {
+      "n": 1000,
+      "pass_rate": 0.097,
+      "passed": 97
+    },
+    "4.0/flat_turns_no_parallax": {
+      "n": 1000,
+      "pass_rate": 0.657,
+      "passed": 657
+    },
+    "4.0/live_turns": {
+      "n": 1000,
+      "frr": 0.11099999999999999,
+      "time_mean": 4.573115860517428,
+      "time_median": 4.499999999999992,
+      "time_p95": 6.249999999999986,
+      "fail_reasons": {
+        "Wrong action - follow the prompts in the order shown": 98,
+        "Timed out waiting for": 13
+      },
+      "time_hist": [
+        0,
+        0,
+        6,
+        298,
+        379,
+        158,
+        39,
+        7,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "4.0/live_full": {
+      "n": 1000,
+      "frr": 0.15100000000000002,
+      "time_mean": 4.364546525323903,
+      "time_median": 4.249999999999993,
+      "time_p95": 5.899999999999964,
+      "fail_reasons": {
+        "Wrong action - follow the prompts in the order shown": 138,
+        "Timed out waiting for": 11,
+        "No response to the prompt in time": 2
+      },
+      "time_hist": [
+        0,
+        0,
+        21,
+        367,
+        326,
+        100,
+        29,
+        3,
+        2,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}

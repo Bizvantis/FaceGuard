@@ -1,0 +1,669 @@
+\documentclass[journal]{IEEEtran}
+\usepackage{amsmath,amsthm} % before newtxmath, which also provides the AMS symbols
+\usepackage{iftex}
+\ifXeTeX % e.g. Tectonic: Times text via TeX Gyre Termes
+  \usepackage{newtxmath}
+  \usepackage[no-math]{fontspec}
+  \setmainfont{texgyretermes}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold,
+                              ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+\else % pdfLaTeX (IEEE / Overleaf)
+  \usepackage[T1]{fontenc}
+  \usepackage{newtxtext,newtxmath}
+\fi
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,shapes.geometric,backgrounds}
+\usepackage{url}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{flafter} % a float never appears before the text that first refers to it
+\usepackage[hidelinks]{hyperref}
+\usepackage{balance}
+
+\newtheorem{proposition}{Proposition}
+\algnewcommand{\IfThen}[2]{\State \algorithmicif\ #1\ \algorithmicthen\ #2} % one-line "if ... then ..."
+\definecolor{fgblue}{HTML}{2A78D6}
+\definecolor{fgorange}{HTML}{EB6834}
+\definecolor{fgaqua}{HTML}{1BAF7A}
+\definecolor{fgink}{HTML}{0B0B0B}
+\definecolor{fgmuted}{HTML}{898781}
+\definecolor{fgfill}{HTML}{EEF4FC}
+\definecolor{fggrey}{HTML}{F4F3F0}
+
+\input{generated/numbers.tex}
+\input{generated/tab_liveness.tex}
+\input{generated/tab_baselines.tex}
+\input{generated/tab_recog.tex}
+\input{generated/tab_mpii.tex}
+\input{generated/tab_demo.tex}
+\input{generated/tab_pilot.tex}
+\newcommand{\sys}{FaceGuard}
+
+\hyphenation{Face-Guard Media-Pipe web-cam web-cams op-er-at-ing}
+
+\begin{document}
+
+\title{\sys: Continuous Face Authentication With a Homography-Parallax Liveness Cue for Commodity Webcams}
+
+\author{First~A.~Author,~\IEEEmembership{Student~Member,~IEEE,}
+        and~Second~B.~Author%
+\thanks{Affiliation: Department of Computer Science and Engineering, Institution Name, City, Country. Contact: author@example.edu.}%
+\thanks{The source code and experiment scripts are available at \url{https://github.com/Bizvantis/FaceGuard}.}}
+
+\markboth{\sys: Continuous Face Authentication With a Homography-Parallax Liveness Cue}%
+{\sys: Continuous Face Authentication With a Homography-Parallax Liveness Cue}
+
+\maketitle
+
+\begin{abstract}
+Windows face sign-in requires an infrared camera because a photograph can deceive an ordinary RGB webcam, so most laptops offer no face-based protection. We present \sys{}, a CPU-only system that adds face recognition, a liveness check and continuous presence authentication to any webcam while leaving password or PIN sign-in untouched. We show that a steeply tilted print can push the five-landmark yaw estimate past a head-turn threshold, because perspective slants the eye line and roll compensation turns the vertical nose offset into apparent yaw, and we propose a homography-parallax cue that is exactly zero for planar presentations under a pinhole camera. In a Monte-Carlo evaluation on \parFacesEval{} held-out 3-D face meshes, a protocol combining this cue with ordered, timed challenges rejected every flat and bent print and admitted \attUniversalFull\% of replays containing every action, against \lbUniMin\%--\lbUniMax\% for head-turn, blink and random-challenge baselines, while rejecting \livFrr\% of live users. The pipeline reaches \lfwAccFull\% verification accuracy on Labeled Faces in the Wild (LFW) and an equal error rate of \mpEer\% on laptop-webcam images recorded over weeks, but its false-match rate is up to \dmEthFmrRatio{} times higher for some demographic groups. In simulated webcam streams a presence guard caused no false lock in \gHours{}~h and locked out \gIntrRate\% of strangers after a median of \gIntrMed{}~s. A real-world evaluation with a laptop webcam over \rwAllSessions{} recorded sessions exposed two faults that simulation had missed, which we corrected, and rejected all \rwAllAttN{} phone-screen attacks.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Continuous authentication, face liveness, homography parallax, presentation attacks, open-set face identification, deauthentication, template protection.
+\end{IEEEkeywords}
+
+% =====================================================================================================
+\section{Introduction}
+\IEEEPARstart{L}{eaving} a workstation unlocked, even briefly, hands the whole session to whoever sits down next, including open e-mail, stored passwords and single-sign-on tokens. Idle timeouts and manual locking reduce this exposure, yet both depend on the user, and a timeout long enough to be tolerable is too long to stop an opportunistic insider. Continuous authentication re-checks the user's presence after login, for instance with soft biometrics seen by a webcam~\cite{niinuma2010soft} or with wrist-worn and wireless signals that reveal when the user walks away~\cite{mare2014zebra,conti2017fadewich}; a recent review of biometric continuous authentication is given in~\cite{ayeswarya2024review}.
+
+On a laptop the face is the obvious signal for this purpose: a camera already points at the user, and deep face recognition has become highly accurate~\cite{schroff2015facenet,deng2019arcface}. Windows Hello, however, allows face sign-in only with a near-infrared (IR) camera, and it requires impostors to be accepted in fewer than 0.001\% of attempts while more than 95\% of genuine attempts succeed~\cite{ms2024hello}. Plain RGB webcams do not qualify because a printed photograph or a phone screen can stand in for the user~\cite{zhang2012casiafasd}, so the RGB camera found in most laptops cannot be used for face sign-in at all. Replacing the operating-system (OS) password with an RGB face match would make the machine easier, not harder, to break into.
+
+\sys{} therefore keeps the password or PIN as the only way to unlock the OS and uses the webcam for protections that stay safe even if the face matcher is fooled: the PC locks when its owner leaves, a stranger who sits down is photographed and locked out, a person reading over the owner's shoulder triggers a warning, the locked screen stays watched, and user-level applications or scripts can request a liveness-checked face unlock.
+
+A head-turn challenge needs an estimate of head yaw. When only the five landmarks returned by a face detector are available, the simplest estimate is the sideways offset of the nose from the midpoint of the eyes, a geometric cue of the kind surveyed in~\cite{murphy2009headpose}. We show analytically and in rendering experiments that a photograph tilted strongly towards the camera undergoes a keystone distortion that slants the eye line; when the estimator removes this apparent roll, part of the vertical nose offset becomes a sideways offset that resembles a real head turn. To close this gap we introduce a parallax test based on a four-point homography, which is exactly zero for a flat presentation however it is moved.
+
+Our contributions are as follows:
+\begin{enumerate}
+\item An analysis of perspective-induced roll leakage in five-landmark yaw estimation and a homography-parallax liveness cue with a proof of planar invariance, calibrated and evaluated on disjoint sets of real 3-D face meshes.
+\item A randomized challenge-response protocol with order enforcement and response timing, compared with three conventional protocols in one Monte-Carlo simulation, with an ablation of every defense and a sensitivity analysis of the behavioral model.
+\item A CPU-only face recognition and continuous authentication system for ordinary webcams, with open-set top-$k$ matching, a presence guard with lock-screen watch, bounded template adaptation and encrypted template storage.
+\item An evaluation covering LFW verification with same-protocol ArcFace baselines, operating points over \opImpostor{} impostor pairs, open-set identification, robustness to degradations, laptop-webcam images recorded over weeks, demographic differentials, template adaptation over weeks, a 10-hour system-level guard simulation, a real-world evaluation with a laptop webcam and the runtime on a laptop CPU.
+\end{enumerate}
+Section~\ref{sec:related} surveys prior work and Section~\ref{sec:system} describes the design of \sys{}. Section~\ref{sec:setup} details the data and protocols, Section~\ref{sec:results} reports and discusses the results, and Section~\ref{sec:conclusion} concludes.
+
+% =====================================================================================================
+\section{Related Work}\label{sec:related}
+
+\subsection{Face Detection and Recognition}
+YuNet~\cite{wu2023yunet}, the face detector used by \sys{}, is an anchor-free network that predicts face boxes and five facial landmarks jointly and is designed for millisecond-level inference on small inputs; on 640-pixel frames of our laptop it takes \rtDet~ms (Section~\ref{sec:runtime}). Deep embeddings brought face verification on LFW to 99.63\% with the triplet objective of FaceNet~\cite{schroff2015facenet}, and training with an additive angular margin (ArcFace) became a common choice~\cite{deng2019arcface}, often on very large web-collected datasets such as WebFace260M~\cite{zhu2021webface260m}. SFace~\cite{zhong2021sface} replaces hard margins by sigmoid constraints on intra- and inter-class distances so that low-quality training images are not over-fitted; we use its lightweight model from the OpenCV Model Zoo. A deployed system must also reject people who were never enrolled, a setting formalized as open-set face recognition~\cite{gunther2017openset}, and it profits from knowing which images to trust. Learned quality estimators such as SER-FIQ~\cite{terhorst2020serfiq} serve this purpose; \sys{} uses a cheap, rule-based quality gate instead.
+
+\subsection{Presentation Attack Detection and Liveness}
+Yu \emph{et al.}~\cite{yu2023fassurvey} review deep anti-spoofing methods, and ISO/IEC 30107-3 specifies how such methods are tested and reported~\cite{iso30107-3}. Passive detectors learn cues from single images, for example image-distortion statistics~\cite{wen2015ida} or depth maps supervised during training~\cite{liu2018auxiliary}, and recent work improves their generalization to unseen domains~\cite{wang2022ssan}. They need attack datasets such as CASIA-FASD, which already contains warped photographs~\cite{zhang2012casiafasd}. Motion-based methods rely on the fact that a flat photograph moves differently from a 3-D head: Kollreider \emph{et al.} compare the optical flow of facial parts~\cite{kollreider2007motion}, De Marsico \emph{et al.} test projective invariants of facial points~\cite{demarsico2012projective}, and Wang \emph{et al.} recover sparse 3-D structure from a single camera~\cite{wang2013structure}. Interactive schemes instead ask the user to blink~\cite{pan2007eyeblink} or to perform lip movements~\cite{zhou2024lipmotion}. Our parallax cue belongs to the planarity-testing family, but it is a closed-form quantity computed from the five landmarks the detector already outputs, expressed in degrees and embedded in a challenge-response protocol; Section~\ref{sec:liveres} compares this protocol with head-turn, blink and random-challenge baselines.
+
+\subsection{Continuous Authentication and Template Management}
+Niinuma \emph{et al.}~\cite{niinuma2010soft} keep a PC session authenticated by following the user's face and clothing color with a webcam, whereas ZEBRA~\cite{mare2014zebra} and FADEWICH~\cite{conti2017fadewich} end the session when a wristband or radio signals show that the user has left. \sys{} provides deauthentication and intruder capture with the built-in camera alone and uses online multi-object tracking~\cite{bewley2016sort} as a building block. Stored templates are an attack target in their own right~\cite{ratha2001enhancing}, and updating them over time, as in template co-update~\cite{rattani2008coupdate}, follows appearance changes at the risk of drifting towards impostors; Section~\ref{sec:adaptive} explains how \sys{} bounds this drift.
+
+% =====================================================================================================
+\section{The \sys{} System}\label{sec:system}
+
+\subsection{Architecture and Threat Model}
+Fig.~\ref{fig:arch} shows how the components interact. A single camera thread owns the device and every model, and the interface only draws what this thread produces. Recognition runs on each frame and serves three consumers: the live view, the challenge-response task behind face unlock, and the presence guard.
+
+\begin{figure*}[!t]
+\centering
+\begin{tikzpicture}[x=1mm, y=1mm,
+  font=\footnotesize,
+  box/.style={draw=fgblue, fill=fgfill, rounded corners=2pt, align=center, minimum height=13mm, inner sep=3pt, text width=23mm},
+  sec/.style={draw=fgorange, fill=fggrey, rounded corners=2pt, align=center, minimum height=13mm, inner sep=3pt, text width=23mm},
+  io/.style={draw=fgmuted, rounded corners=2pt, align=center, minimum height=13mm, inner sep=3pt, text width=17mm},
+  arr/.style={-{Latex[length=2mm]}, draw=fgink, line width=0.5pt}]
+\node[io]  (cam) at (0,0)   {Webcam\\ frame};
+\node[box] (det) at (28,0)  {YuNet detector\\ box + 5 landmarks};
+\node[box] (trk) at (58,0)  {IoU tracker\\ + quality gate};
+\node[box] (emb) at (88,0)  {Alignment $112{\times}112$\\ + SFace\\ 128-d embedding};
+\node[box] (mat) at (118,0) {Open-set matcher\\ top-$k$ cosine\\ + EMA smoothing};
+\node[sec] (grd) at (148,0) {Presence guard\\ (Section~\ref{sec:guard})};
+\node[box] (mesh) at (28,-21)   {MediaPipe mesh\\ 478 points\\ + blendshapes};
+\node[sec] (live) at (58,-21)   {Liveness check\\ yaw + parallax\\ + blink / smile};
+\node[io]  (unlock) at (88,-21) {Face unlock\\ result};
+\node[io]  (db) at (118,-21)    {Encrypted\\ gallery (DPAPI)};
+\node[io]  (os) at (148,-21)    {Lock PC, photo,\\ notification};
+\draw[arr] (cam) -- (det);
+\draw[arr] (det) -- (trk);
+\draw[arr] (trk) -- (emb);
+\draw[arr] (emb) -- (mat);
+\draw[arr] (mat) -- (grd);
+\draw[arr] (grd) -- (os);
+\draw[arr] (det) -- (mesh);
+\draw[arr] (mesh) -- (live);
+\draw[arr] (trk) -- (live);
+\draw[arr] (live) -- (unlock);
+\draw[arr] (mat.south west) -- (unlock.north east);
+\draw[arr] ([xshift=-3mm]db.north) -- ([xshift=-3mm]mat.south);
+\draw[arr, dashed] ([xshift=3mm]mat.south) -- ([xshift=3mm]db.north);
+\end{tikzpicture}
+\caption{Architecture of \sys{}. Blue: recognition pipeline; orange: security components; gray: inputs, storage and outputs. Detection, tracking, embedding and matching run on every frame; the dense mesh is evaluated only during a liveness check or when its overlay is shown. IoU: intersection over union; EMA: exponential moving average; DPAPI: Windows Data Protection API. The dashed arrow is the bounded template update (Section~\ref{sec:adaptive}).}
+\label{fig:arch}
+\end{figure*}
+
+\emph{Threat model.} We protect the unlocked OS session and, secondarily, the stored face templates against four adversaries: (A1) someone who sits down at an unattended, unlocked PC; (A2) someone at the locked PC, for instance guessing the PIN; (A3) a presentation attacker who wants face unlock to accept the owner, using a flat or bent print, a replayed recording of a genuine session, or a ``universal'' recording in which the owner performs every action; and (A4) an onlooker behind the working owner. 3-D masks, injection of synthetic video into the camera driver and malware running with the user's rights are out of scope; such malware could disable any user-level program anyway. Because \sys{} never unlocks the OS, fooling its face matcher can at worst prevent a lock or open a user-level application. Table~\ref{tab:compare} lists the resulting functions next to an idle timeout and IR-based Windows Hello sign-in.
+
+\begin{table}[!t]
+\centering
+\caption{Functions of the Face Camera Compared}
+\label{tab:compare}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Function & Timeout & Hello~\cite{ms2024hello} & \sys{} \\
+\midrule
+Unlock the OS with the face & -- & yes & no (by design) \\
+Lock when the user walks away & delayed & --\textsuperscript{a} & yes \\
+Lock and photograph a stranger & -- & --\textsuperscript{a} & yes \\
+Watch the locked PC & -- & --\textsuperscript{a} & yes \\
+Warn about an onlooker & -- & --\textsuperscript{a} & yes \\
+Recognize several people in view & -- & --\textsuperscript{a} & yes \\
+Liveness & -- & IR imaging & challenges \\
+Camera required & none & IR camera & RGB webcam \\
+\bottomrule
+\end{tabular}\\[2pt]
+\raggedright\scriptsize Timeout: idle-timeout lock; Hello: Windows Hello face sign-in. \textsuperscript{a}Not a function of face sign-in, which authenticates the user only when the session is unlocked.
+\end{table}
+
+\subsection{Recognition Pipeline}
+\emph{Detection and alignment.} Each frame is scaled to a width of at most 640 pixels for YuNet (model \texttt{face\_detection\_yunet\_2023mar}), which returns a box, a confidence and five points $\mathbf{p}_1,\dots,\mathbf{p}_5$: the right and left eye centers, the nose tip, and the right and left mouth corners, as seen from the subject. The face is warped to a $112\times112$ crop by the similarity transform $(s,\mathbf{R},\mathbf{t})$ that minimizes $\sum_i \lVert s\mathbf{R}\mathbf{p}_i+\mathbf{t}-\mathbf{q}_i\rVert^2$ for canonical positions $\mathbf{q}_i$.
+
+\emph{Embedding.} The SFace network $\mathcal{F}$ (model \texttt{face\_recognition\_sface\_2021dec}, 38.7~MB) maps the crop $\mathbf{x}$ to $\mathcal{F}(\mathbf{x})\in\mathbb{R}^{128}$. With the normalization $\nu(\mathbf{v})=\mathbf{v}/\lVert\mathbf{v}\rVert$ and $\mathrm{flip}(\cdot)$ the horizontal mirror image, enrollment and verification use flip test-time augmentation (TTA),
+\begin{equation}
+\mathbf{e}(\mathbf{x}) = \nu\bigl(\nu(\mathcal{F}(\mathbf{x}))+\nu(\mathcal{F}(\mathrm{flip}(\mathbf{x})))\bigr),
+\end{equation}
+and faces are compared by their cosine similarity $s=\mathbf{e}_a^\top\mathbf{e}_b$. Live tracking skips the mirror image to save time.
+
+\emph{Open-set matching.} A person $p$ is enrolled with unit-norm samples $\{\mathbf{g}_{p,j}\}$, typically 22 images taken in five guided head poses. A query $\mathbf{q}$ receives the mean of its $k=3$ highest similarities to that person,
+\begin{equation}
+S_p(\mathbf{q})=\frac{1}{k}\sum_{j\in\mathcal{T}_k(p)}\mathbf{q}^\top\mathbf{g}_{p,j},
+\end{equation}
+where $\mathcal{T}_k(p)$ indexes these samples. Averaging the closest samples favors enrollment images whose pose resembles the query and is less noisy than a single nearest neighbor. The scores of a tracked face are smoothed by an exponential moving average, $\tilde{S}_p(t)=\alpha S_p(t)+(1-\alpha)\tilde{S}_p(t-1)$ with $\alpha=0.5$, and with $p^\star=\arg\max_p\tilde{S}_p$ the face is labeled
+\begin{equation}
+\text{label}=\begin{cases}
+\text{match}, & \tilde{S}_{p^\star}\ge\tau,\\
+\text{unknown}, & \tilde{S}_{p^\star}<\tau_u,\\
+\text{uncertain}, & \text{otherwise,}
+\end{cases}
+\end{equation}
+where $\tau_u=0.30$ and $\tau$ equals 0.38, 0.45 or 0.52 for the relaxed, balanced (default) and strict security levels. Alarms can be raised only by \emph{unknown} faces and unlocking needs a \emph{match}, while ambiguous frames fall in the \emph{uncertain} band.
+
+\emph{Tracking and quality gate.} Detections are linked to tracks greedily by intersection over union (IoU $\ge0.25$). If no box overlaps enough, a detection whose center lies within 0.6 face widths of a track and whose size differs by less than a factor of 1.5 continues that track, which handles fast motion at low frame rates; a track ends after five missed frames or 1~s. Each track is re-embedded every 0.35~s (0.2~s in the background). The quality gate does not stop a face from being tracked and matched; it decides which faces may be enrolled, may update a template and may trigger an intruder lock. For enrollment it requires a face at least 80 pixels wide, a Laplacian variance of at least 35 (gray levels squared, on the $112\times112$ crop), a mean brightness between 45 and 200 gray levels with at most 12\% over-exposed pixels, a detector score of at least 0.8, $|\text{yaw}|\le40^\circ$, $|\text{pitch}|\le35^\circ$ and the whole face inside the frame. Passive decisions use 60 pixels, a Laplacian variance of 25 and $|\text{yaw}|,|\text{pitch}|\le30^\circ$. These limits are deliberately conservative relative to the degradation results of Section~\ref{sec:robust}, where recognition degrades noticeably below about 24 pixels and under over-exposure.
+
+\subsection{Head-Pose Estimation and Roll Leakage}\label{sec:yaw}
+Let $\mathbf{u}$ be the unit vector pointing from the right to the left eye, $d=\lVert\mathbf{p}_2-\mathbf{p}_1\rVert$ the distance between the eyes and $\mathbf{m}=(\mathbf{p}_1+\mathbf{p}_2)/2$ their midpoint. The estimator measures the roll $\phi=\operatorname{atan2}(u_y,u_x)$, rotates the nose offset back with the 2-D rotation matrix $\mathbf{R}_{-\phi}$, $\mathbf{n}'=\mathbf{R}_{-\phi}(\mathbf{p}_3-\mathbf{m})$, and converts it into a yaw ratio and angle
+\begin{equation}
+\gamma = n'_x/d,\qquad \hat{\theta}=\arctan(\gamma/K),
+\end{equation}
+where $K=\parKratio$ is fitted on a calibration set of real 3-D faces (Section~\ref{sec:pose}). On \poseN{} LFW photographs, $\hat\theta$ agrees with the 3-D head pose of the MediaPipe face mesh~\cite{kartynnik2019facemesh} with a Pearson correlation of \poseR{} and a mean absolute difference of \poseMae$^\circ$.
+
+Turning a flat photograph by $\beta$ about a vertical axis does more than compress it horizontally. A pinhole camera with focal length $f$ at distance $D$ images the card point $(x,y)$ at $(f x\cos\beta,\, f y)/(D+x\sin\beta)$, which enlarges the nearer side and slants the eye line by an angle $\phi_\beta\neq0$. Undoing this slant also rotates the nose offset, whose vertical part $h$ is much larger than its horizontal part, and moves roughly $h\sin\phi_\beta$ into $n'_x$. As Fig.~\ref{fig:parallax}(a) shows, the average apparent yaw of a tilted print stays small, but individual faces reach \parFlatRatioMax$^\circ$ of apparent yaw change, enough to pass a head-turn prompt.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_parallax.pdf}
+\caption{Estimated yaw change against the rotation of a real head, a flat print and a print bent into a cylinder of radius 40~mm, rendered from \parFacesEval{} held-out 3-D face meshes through a webcam model with 1-pixel landmark noise (mean $\pm$ s.d.; Section~\ref{sec:pose}). (a) The yaw ratio also responds to tilted prints because of roll leakage. (b) The mean homography parallax of the flat print stays near zero for every angle.}
+\label{fig:parallax}
+\end{figure*}
+
+\subsection{Homography-Parallax Cue}\label{sec:parallax}
+The eye centers and mouth corners lie close to one plane, whereas the nose tip sits on average \parNose~mm in front of the eye plane. Denote by $\mathbf{b}_i$ the landmarks recorded while the user looks straight at the camera, by $\mathbf{c}_i$ the current ones, and by $\mathbf{b}^{\mathrm{h}}_i=[\mathbf{b}_i^\top,1]^\top$ their homogeneous coordinates. The homography $\mathbf{H}$ with $\mathbf{c}_i\simeq\mathbf{H}\mathbf{b}^{\mathrm{h}}_i$ for $i\in\{1,2,4,5\}$, where $\simeq$ denotes equality up to scale, is obtained by the direct linear transform~\cite{hartley2004mvg}, and four correspondences determine it exactly. Mapping the baseline nose gives the prediction $\hat{\mathbf{c}}_3=\eta(\mathbf{H}\mathbf{b}^{\mathrm{h}}_3)$, where $\eta$ divides by the third coordinate, and we define the parallax ratio and the parallax yaw
+\begin{equation}
+\rho=\frac{(\mathbf{c}_3-\hat{\mathbf{c}}_3)^\top\mathbf{u}}{d},\qquad \psi=\arctan(\rho/K_p),
+\end{equation}
+with $K_p=\parKpar$ fitted on the calibration set.
+
+\begin{proposition}
+If the five landmarks lie on a plane, i.e.\ for any flat print or screen, and are observed without noise by a pinhole camera, then $\rho=0$ for every rigid motion of the plane.
+\end{proposition}
+\begin{proof}
+A scene plane is mapped to the image by a homography, so the baseline and current views of the plane differ by some homography $\mathbf{H}_0$. Since four points in general position determine a homography uniquely, $\mathbf{H}=\mathbf{H}_0$. The nose lies on the same plane, hence $\mathbf{c}_3\simeq\mathbf{H}_0\mathbf{b}^{\mathrm{h}}_3$ and $\hat{\mathbf{c}}_3=\mathbf{c}_3$.
+\end{proof}
+
+When a real head turns, the protruding nose leaves its predicted position and $\psi$ follows the rotation (Fig.~\ref{fig:parallax}(b)). In practice landmark noise and lens distortion make $\rho$ small but nonzero for flat prints, which the acceptance threshold has to absorb (Section~\ref{sec:pose}), and a print bent into a cylinder is no longer planar and produces some parallax, although far less than a head. The test reuses the detector's landmarks and costs one $8\times8$ linear solve per frame.
+
+\subsection{Challenge-Response Protocol}\label{sec:protocol}
+A face-unlock session (Algorithm~\ref{alg:live}) passes through the phases \emph{align}, \emph{challenge}$_i$, \emph{recenter} and \emph{final}. While aligning, the user looks at the camera for four frames, and the session stores the baseline yaw $\hat\theta_0$, the baseline blink and smile scores $b_0$ and $s_0$, the baseline landmarks $\mathbf{b}_i$ and a reference embedding. It then asks for $n=3$ actions drawn without replacement from $\{$turn left, turn right, blink, smile$\}$, so every sequence contains at least one turn and one expression; without a face mesh only turns are requested, never the same one twice in a row. Blink and smile are read from the blendshape scores of the face mesh. A turn is accepted after two consecutive frames with $\pm(\hat\theta-\hat\theta_0)\ge\tau_\theta$ and $\pm\psi\ge0.8\,\tau_\theta$, where $\tau_\theta=18^\circ$. A blink must lift the blink score above $\max(0.30,b_0+0.20)$ and let it fall below $\max(0.20,b_0+0.10)$ again, and a smile must hold the smile score above $\max(0.5,s_0+0.3)$ for two frames. The thresholds are relative to the user's own baseline so that people with a high resting score are not rejected. The blink thresholds were lowered from 0.45 and 0.25 after the first round of the real-world evaluation showed that a natural blink sampled at webcam frame rates often peaks at only 0.3--0.4 (Section~\ref{sec:pilot}); their effect on live users is quantified in Section~\ref{sec:liveres}.
+
+\begin{algorithm}[!t]
+\caption{Face-unlock liveness session}\label{alg:live}
+\footnotesize
+\begin{algorithmic}[1]
+\Require frames with landmarks, yaw $\hat\theta$, blink and smile scores, embeddings
+\Ensure \textsc{pass} with an identity, or \textsc{fail} with a reason
+\State record $\hat\theta_0$, $b_0$, $s_0$, $\mathbf{b}_i$ and a reference embedding over 4 frontal frames
+\State draw 3 distinct actions from \{left, right, blink, smile\}; strikes $\gets 0$
+\For{each action $a$}
+  \State show the prompt; $t_p\gets$ now
+  \Repeat
+    \IfThen{2nd face, face lost $>1$~s, or identity $<0.40$ within $20^\circ$}{\Return \textsc{fail}}
+    \IfThen{off-prompt action starts from neutral}{strikes $\gets$ strikes $+1$}
+    \IfThen{strikes $>1$}{\Return \textsc{fail}}
+    \State count $a$ only if its onset ($\kappa>0.3$) is in $[t_p{+}0.15,\,t_p{+}3.5]$~s
+    \IfThen{no valid onset by $t_p{+}3.5$~s, or $a$ lasts $>7$~s}{\Return \textsc{fail}}
+  \Until{$a$ is accepted}
+  \State wait until the face is centered again
+\EndFor
+\State \Return the matcher's decision on the mean frontal embedding
+\end{algorithmic}
+\end{algorithm}
+
+\emph{Order enforcement.} Performing an action that belongs to another prompt, such as turning the wrong way, turning while a blink or smile is requested, or smiling during a turn or blink prompt, earns a strike. As the reflected view may lead one to confuse left and right, the first strike is excused, but the second strike ends the session. A blink does not count as a strike at all, and an additional strike is counted only after the face has returned to a neutral position.
+
+\emph{Response timing.} Each action has to begin as a reaction to its prompt. Let the progress $\kappa(t)\in[0,1]$ be the fraction of the acceptance threshold that has been reached; for a turn it is the smaller of the yaw-ratio and parallax fractions. A movement counts only if $\kappa$ first exceeds 0.3 between $t_{\min}=0.15$~s and $t_{\max}=3.5$~s after the prompt, and the session fails if no such onset occurs by $t_{\max}$. Reaction times to visual stimuli measured with a high-speed camera are of the order of 0.3~s~\cite{tatsuno2016reaction}, and they vary between and within people; the window therefore starts below the fastest plausible reaction and leaves ample time for slow users. A looping video, in contrast, cannot anticipate a prompt, so movements already under way when the prompt appears, or starting too late, are ignored.
+
+\emph{Identity continuity.} Every new embedding taken within $20^\circ$ of the baseline pose must keep a cosine similarity of at least 0.40 with the reference, well below typical genuine scores but above most impostor scores (Section~\ref{sec:results}-A). Embeddings of strongly turned faces legitimately differ from a frontal one (the first real-world round rejected a genuine user at $31^\circ$--$49^\circ$), so during a turn the tracker carries the identity, and a lost track forces a new check. A second face, losing the face for more than 1~s, spending more than 7~s on one action or exceeding 45~s in total fails the session. The final decision is taken by the matcher on the mean of the frontal embeddings gathered during the session.
+
+\subsection{Presence Guard}\label{sec:guard}
+The guard (Fig.~\ref{fig:guard}, Algorithm~\ref{alg:guard}) analyzes four frames per second in the background. A face counts as \emph{authorized} when it matches the owner or a trusted person, and as a \emph{stranger} when, after at least two embeddings, it is unknown or matches an enrolled person who is not trusted, so that a single bad frame cannot raise an alarm. With $t_a$ the last time an authorized face was seen and $I(t)$ the keyboard and mouse idle time, the guard applies the following rules:
+\begin{itemize}
+\item \emph{Walk-away lock} once $\min(t-t_a,\,I(t))\ge T_a$ ($T_a=30$~s by default), announced 8~s beforehand; while the user types, the PC stays unlocked even if the face is out of view.
+\item \emph{Intruder}: a stranger face that passes the passive quality gate and is present for $T_i=2.5$~s, with no authorized face during the last 3~s, is photographed and reported, and the PC is locked.
+\item \emph{Shoulder-surfer}: an authorized user together with a stranger at least 40 pixels wide for 3~s produces a notification; because only a notification follows, the quality gate is not required.
+\item \emph{Lock-screen watch}: for $W$ minutes after locking (30 by default), confirmed strangers are photographed; otherwise the camera is released while the PC is locked.
+\item \emph{Safety valves}: for 15~s after each unlock, intruder detections only suggest re-enrollment; at most three intruder locks are issued within 10 minutes; a camera failure never locks the PC; alerts are limited to one per minute.
+\end{itemize}
+
+\begin{figure}[!t]
+\centering
+\begin{tikzpicture}[x=1mm, y=1mm,
+  font=\scriptsize,
+  st/.style={draw=fgblue, fill=fgfill, rounded corners=6pt, minimum width=17mm, minimum height=6.5mm, align=center},
+  al/.style={draw=fgorange, fill=fggrey, rounded corners=6pt, minimum width=17mm, minimum height=6.5mm, align=center},
+  lab/.style={fill=white, inner sep=1pt, align=center},
+  arr/.style={-{Latex[length=1.6mm]}, line width=0.45pt}]
+\node[st] (present) at (0,0)    {PRESENT};
+\node[st] (watch)   at (40,0)   {WATCHING};
+\node[al] (lock)    at (0,-26)  {LOCKED};
+\node[al] (intr)    at (40,-26) {INTRUDER};
+\draw[arr] ([yshift=1.2mm]present.east) -- node[above]{owner not seen} ([yshift=1.2mm]watch.west);
+\draw[arr] ([yshift=-1.2mm]watch.west) -- node[below]{owner seen} ([yshift=-1.2mm]present.east);
+\draw[arr] (watch) -- node[right, align=left]{stranger\\ $\ge T_i$:\\ photo\\ + lock} (intr);
+\draw[arr] (watch.south west) -- node[lab, pos=0.5]{away $\ge T_a$ and\\ idle $\ge T_a$} (lock.north east);
+\draw[arr] (intr) -- node[above]{OS locks} (lock);
+\draw[arr] (lock) -- node[left, align=right]{unlocked\\ by PIN\\ (grace 15 s)} (present);
+\draw[arr, dashed] ([xshift=3mm]present.north west) to[out=90, in=90, looseness=1.5] node[above]{shoulder-surfer $\ge3$ s: alert} ([xshift=-3mm]present.north east);
+\draw[arr, dashed] ([xshift=3mm]lock.south west) to[out=-90, in=-90, looseness=1.5] node[below]{lock-screen watch: photo} ([xshift=-3mm]lock.south east);
+\end{tikzpicture}
+\caption{Presence-guard states (simplified; PAUSED, NO\_CAMERA and NO\_OWNER omitted). Solid arrows change state, dashed arrows raise alerts.}
+\label{fig:guard}
+\end{figure}
+
+\begin{algorithm}[!t]
+\caption{Presence-guard update (4 frames per second)}\label{alg:guard}
+\footnotesize
+\begin{algorithmic}[1]
+\Require labeled tracked faces, idle time $I(t)$, session state
+\Ensure possibly a lock, a photograph or a notification
+\If{the session is locked}
+  \IfThen{within $W$ min of locking and a stranger is confirmed}{photograph it}
+  \State \Return
+\EndIf
+\IfThen{an authorized face is visible}{$t_a\gets t$}
+\If{$\min(t-t_a, I(t))\ge T_a$} lock the PC (warning at $T_a-8$~s)
+\ElsIf{a quality-checked stranger is seen for $T_i$, $t-t_a\ge3$~s, outside the grace period, $<3$ locks in 10 min}
+  \State photograph, notify and lock the PC
+\ElsIf{an authorized face and a stranger $\ge40$~px are seen for 3~s}
+  \State notify (at most once per minute)
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Template Adaptation, Storage and Implementation}\label{sec:adaptive}
+Faces change over time. \sys{} appends a live embedding to a template only when its smoothed score reaches $\tau+0.12$, the face passes the quality gate and is near-frontal, its highest similarity to the stored samples is below 0.92 so that it adds information, and no update happened during the last 10 minutes. Adaptive samples are kept in a first-in-first-out buffer of at most $\min(30,\max(5,n_e))$ entries, $n_e$ being the number of enrolled samples, so they never outnumber an enrollment of five or more samples (Section~\ref{sec:webcam} evaluates the rule over weeks). Templates, names and interface thumbnails are serialized, compressed and encrypted with the Windows Data Protection API, whose user-scope key is derived from the user's logon credentials, so the file can be decrypted only by the same user on the same machine~\cite{ms2024dpapi}. Files are written atomically with a backup copy, and video is never stored.
+
+The software is written in Python~3.12 with OpenCV~5.0, NumPy~2.5, MediaPipe~1.0.1, scikit-learn~1.9.1 and PySide6~6.11. OpenCV runs the YuNet (0.23~MB) and SFace models in the Open Neural Network Exchange (ONNX) format, the MediaPipe Face Landmarker (\texttt{face\_landmarker.task}, 3.8~MB) supplies 478 points and 52 blendshape scores, and PySide6 draws the interface. The Windows functions for locking, session state, idle time and DPAPI are reached through ctypes, so no administrator rights are needed, and every model is checked against a pinned SHA-256 hash after download. The application offers a live view with landmark, mesh and head-pose overlays, guided enrollment, face unlock, people management, the guard, an intruder gallery and a ``Model Lab'' that shows leave-one-out accuracy, score histograms and an embedding map of the user's own gallery (Fig.~\ref{fig:screens}). All functions are also available from the command line; \texttt{faceguard verify}, for example, exits with code 0 only for a live, recognized face and can thus protect user scripts. The camera is opened at $640\times480$ by default: the built-in webcam of our laptop delivered only 10 frames per second at $1280\times720$ but 20 at $640\times480$, and blink detection needs the frame rate more than the resolution. The code base has about ten thousand lines of Python and 110 automated tests.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/screen_live_crop.png}\\[3pt]
+\includegraphics[width=\columnwidth]{figures/screen_unlock_crop.png}
+\caption{\sys{} user interface (navigation bar cropped). Top: live recognition with the 478-point face mesh, the identity label with its similarity meter and threshold marker, and the per-stage latency. Bottom: a face-unlock session prompting a head turn, for which a still photograph cannot produce the required parallax. The camera input is replaced here by a public-domain NASA portrait.}
+\label{fig:screens}
+\end{figure}
+
+% =====================================================================================================
+\section{Experimental Setup}\label{sec:setup}
+\emph{Platform.} Every experiment ran on a Windows~11 laptop with an eight-core AMD Ryzen~7 7730U processor and 16~GB of memory, using the CPU only, with the software versions listed in Section~\ref{sec:adaptive} and onnxruntime~1.30 for the baselines.
+
+\emph{Data.} The \lfwImages{} photographs of Labeled Faces in the Wild (LFW)~\cite{huang2007lfw} show \lfwPeople{} individuals. YuNet found a face in every image; in the \lfwMultiFace{} images with several faces, the one nearest to the image center was used. In the median, faces are \lfwFaceWidth{} pixels wide and turned by \lfwYawMedian$^\circ$. For the geometry and liveness experiments we sampled 1,500 LFW images and kept the first \parFaces{} for which the MediaPipe mesh reported $|\text{yaw}|\le10^\circ$ and $|\text{pitch}|\le15^\circ$; their meshes were split at random into a calibration set of \parFacesCal{} faces, used only to fit $K$ and $K_p$, and a disjoint evaluation set of \parFacesEval{} faces, used for every geometry and liveness result. The head-pose agreement was measured on the \poseN{} of 3,000 randomly sampled LFW images for which MediaPipe returned a mesh. To evaluate recognition under the target condition, we use MPIIFaceGaze~\cite{zhang2017mpiifacegaze}, which contains frames recorded by the built-in webcams of \mpPeople{} participants' own laptops during everyday use over \mpDaysMin--\mpDaysMax{} days; we sampled \mpPer{} frames per participant evenly over their recording days (\mpImages{} frames, median face width \mpFacePx{} pixels). For the demographic analysis we label LFW identities with the attribute classifiers of Kumar \emph{et al.}~\cite{kumar2011attributes} (Section~\ref{sec:demo}).
+
+\emph{Protocols.} Verification uses the ten View-2 splits of LFW, each holding 300 same-person and 300 different-person pairs; the threshold is fitted on nine splits and tested on the tenth. The ArcFace baselines (InsightFace models \texttt{w600k\_mbf} and \texttt{w600k\_r50}, trained on a WebFace-derived set~\cite{zhu2021webface260m}) receive the same detections and landmarks as SFace, aligned to their own canonical template, and the same flip TTA. Operating points are measured on all \opGenuine{} same-person pairs (at most 50 images per person) and on \opImpostor{} randomly drawn different-person pairs. Identification involves the \idPeople{} people with ten or more images (\idImages{} images in total) and $g$ enrollment images each, averaged over five repetitions. For the open-set test, half of these people are enrolled with five images, and the probes are their remaining images (\osKnown{} on average) together with every image of the others (\osUnknown{}). Robustness is measured on the \robPairs{} pairs of View-2 splits 1 and 2 with only the probe degraded; in addition, every degraded probe is compared with \robImpGallery{} clean images of other people, giving \robImpN{} impostor comparisons per condition. On MPIIFaceGaze, verification uses all same-person pairs recorded on different days and all different-person pairs, and the enrollment protocol of \sys{} enrolls each participant with 22 frames from their first recording days, probes with frames from the second half of their days and measures false accepts by comparing each probe with the galleries of the other 14 participants. Liveness is assessed by Monte-Carlo simulation (Section~\ref{sec:liveres}) and the guard with simulated webcam streams (Section~\ref{sec:guardres}). Runtimes are means of 200 runs after 20 warm-up runs on an otherwise idle machine; the CPU load of the live view was measured with a synthetic 30-frame-per-second image stream instead of a physical camera.
+
+\emph{Real-world evaluation.} The production code was also run on the laptop's built-in webcam by a guided test program that records only decisions, scores, timings and, for the owner, the five landmark positions, but no images. The owner (one of the authors, enrolled with 22 images) performed face-unlock sessions with the full and the turn-only protocol, and presented their own frontal photograph on a phone screen, tilting and turning it as requested, against the full protocol and against the turn-only protocol with and without the parallax gate. Three volunteers who were not enrolled attempted face unlock and took part in the guard scenarios, in which the guard ran with the production thresholds but only logged its decisions. The evaluation ran in two rounds with the same test program. Round~1 (\rwPilotTrials{} sessions) used the earlier protocol at $1280\times720$, where the webcam delivered about 10 frames per second, and exposed the faults described in Section~\ref{sec:pilot}; round~2 used the corrected protocol at $640\times480$ (about \rwFps{} frames per second), and after every attack the owner confirmed that only the phone had been visible. Of the \rwAllSessions{} recorded sessions, one round-1 attack in which the owner's own face had been in view was discarded; all others are reported.
+
+\emph{Reproducibility.} Every randomized step uses a fixed seed: 2026 for the impostor pairs, the identification repetitions, the calibration/evaluation split, the MPIIFaceGaze sample and the demographic impostor pairs, 0 for the mesh selection, 17 for the robustness impostor gallery, 70 and 7 for the two guard scenarios, and one recorded seed per Monte-Carlo configuration.
+
+\emph{Metrics.} Verification is summarized by accuracy, the area under the receiver operating characteristic (ROC) curve (AUC), the equal error rate (EER) and the true-accept rate (TAR) at a fixed false-accept rate (FAR); the false-reject rate (FRR) is the complement of the TAR. Open-set identification is measured by the detection-and-identification rate (DIR) at a given false-alarm rate. For liveness we use the terms of ISO/IEC 30107-3: APCER is the fraction of attacks accepted and BPCER the fraction of live users rejected. We report 95\% Wilson intervals for proportions, two-sided Fisher exact tests for differences between proportions, paired $t$-tests over the ten LFW folds for accuracy differences, and, when no event occurs in $n$ trials, the 95\% upper bound $3/n$ (``rule of three'').
+
+\emph{Ethics.} Apart from the public LFW and MPIIFaceGaze images and a public-domain portrait, the only human data are those of the real-world evaluation, a minimal-risk test with four adult participants, one of them an author. All gave informed consent to take part and to the publication of the anonymous results; no image or video was stored, only decisions, similarity scores, timings and, for the author, the positions of five facial landmarks. The authors' institution has no institutional ethics committee, so this minimal-risk evaluation was conducted without formal ethics review. In deployment, photographs of strangers stay on the user's computer with a retention limit, and users should inform people who share their workspace.
+
+% =====================================================================================================
+\section{Results and Discussion}\label{sec:results}
+
+\subsection{Verification, Baselines and Operating Points}
+Table~\ref{tab:lfw} compares SFace with two ArcFace models run through exactly the same pipeline, and Fig.~\ref{fig:roc} shows the ROC curves of the SFace variants. SFace reaches \lfwAccFull\% accuracy, an EER of \lfwEerFull\% and \lfwTarThreeFull\% TAR at $10^{-3}$ FAR. Both baselines perform better: the ArcFace ResNet-50 (\baseRfiftyMb~MB) reaches \baseRfiftyAcc\% (paired $t$-test of the fold accuracies against SFace: $p\pSfaceRfifty$), and the smaller ArcFace MobileFaceNet (\baseMbfMb~MB) reaches \baseMbfAcc\%, a difference in accuracy that is not significant over the ten folds ($p=\pSfaceMbf$) although its EER (\baseMbfEer\%) and its TAR at $10^{-3}$ FAR (\baseMbfTarThree\%) are also better. \sys{} nevertheless uses SFace because it is distributed under the Apache~2.0 license and runs in OpenCV without further dependencies, whereas the InsightFace models are released for non-commercial research only\footnote{License terms as stated at \url{https://github.com/opencv/opencv_zoo} (SFace, Apache~2.0) and \url{https://github.com/deepinsight/insightface} (model zoo, non-commercial research purposes only), accessed Oct.~1, 2026.}; since the embedding network is a configuration choice, a deployment that may use them would gain accuracy after recalibrating the thresholds of Section~\ref{sec:system}. Mirroring at test time raises the accuracy of SFace by 0.08 points, a difference that is not significant at the 5\% level over the ten folds ($p=\pTta$), and lowers the EER from \lfwEerNoTTA\% to \lfwEerFull\%. Replacing landmark alignment with a plain resize of the detector box cuts the accuracy to \lfwAccNoAlign\%, so the five landmarks matter for recognition as much as for liveness. Because LFW is nearly saturated and its public figures may appear in the data used to train these networks, the results are best read as an upper bound, which the robustness and system tests below complement.
+
+\begin{table*}[!t]
+\centering
+\caption{Verification on LFW View 2 (10-Fold) Under One Protocol: Same Detections, Landmarks and Flip TTA for Every Model}
+\label{tab:lfw}
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Model & Size (MB) & Time (ms)\textsuperscript{a} & Accuracy (\%) & AUC & EER (\%) & TAR (\%) @ FAR $10^{-2}$ & TAR (\%) @ FAR $10^{-3}$ \\
+\midrule
+\RecogRows
+\midrule
+SFace without flip TTA & 38.7 & -- & \lfwAccNoTTA$\pm$\lfwStdNoTTA & \lfwAucNoTTA & \lfwEerNoTTA & \lfwTarTwoNoTTA & \lfwTarThreeNoTTA \\
+SFace without alignment & 38.7 & -- & \lfwAccNoAlign$\pm$\lfwStdNoAlign & \lfwAucNoAlign & \lfwEerNoAlign & \lfwTarTwoNoAlign & \lfwTarThreeNoAlign \\
+\bottomrule
+\end{tabular}\\[2pt]
+\raggedright\scriptsize \textsuperscript{a}Embedding of one aligned $112\times112$ face including flip TTA on the laptop CPU, mean of 200 runs with each library's default threading (SFace: OpenCV DNN; ArcFace: onnxruntime).
+\end{table*}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_roc.pdf}
+\caption{ROC curves of the SFace pipeline on LFW View~2 (accuracy in brackets). Landmark alignment is essential; flip test-time augmentation (TTA) adds a small gain.}
+\label{fig:roc}
+\end{figure}
+
+Fig.~\ref{fig:scores} and Table~\ref{tab:op} give the error rates of single image pairs. The highest of the \opImpostor{} different-person similarities was \opImpMax, and \unkImpostor\% of them fell under $\tau_u=0.30$, compared with \unkGenuine\% of the same-person pairs. The strict level accepts \farStrict\% of impostor pairs, below the Windows Hello limit~\cite{ms2024hello}. According to the rule of thumb in the same specification~\cite{ms2024hello}, the number of comparisons needed is the inverse of the FAR multiplied by the inverse of one minus the confidence, so $10^6$ comparisons support a FAR of $10^{-5}$ at 90\% confidence. These are pairwise LFW rates, not a certification under the Windows Hello test protocol, and the single-pair FRR of the strict level, \frrStrict\%, exceeds the corresponding requirement; in operation every frame is compared with about 22 enrolled samples and smoothed over time, which lowers false rejections. No impostor pair reached the adaptive-update gate of 0.57, which bounds the probability that an impostor frame updates a template by $3\times10^{-6}$ (rule of three).
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_scores.pdf}
+\caption{Similarity distributions of \opGenuine{} genuine and \opImpostor{} impostor LFW pairs (log scale) with the three security thresholds.}
+\label{fig:scores}
+\end{figure}
+
+\begin{table}[!t]
+\centering
+\caption{Operating Points on LFW Image Pairs}
+\label{tab:op}
+\footnotesize
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Security level & $\tau$ & FAR (\%) & FRR (\%) \\
+\midrule
+Relaxed & 0.38 & \farRelaxed & \frrRelaxed \\
+Balanced (default) & 0.45 & \farBalanced & \frrBalanced \\
+Strict & 0.52 & \farStrict & \frrStrict \\
+\midrule
+Windows Hello requirement~\cite{ms2024hello} & -- & $<0.001$ & $<5$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Identification and Open-Set Recognition}
+Closed-set identification is already \idOneNn\% correct with a single enrollment image and levels off near 99.9\% with two or more. Classifiers trained on the embeddings bring no meaningful gain: with five enrollment images a linear support vector machine reaches \clsSvm\%, logistic regression \clsLogreg\% and $k$-nearest neighbors \clsKnn\%, against \clsTopthree\% for the top-3 rule, and unlike the similarity rules they must be retrained for every new person and cannot reject strangers by design. The open-set test separates the rules more clearly (Fig.~\ref{fig:openset}, Table~\ref{tab:openset}). At the balanced threshold, the top-3 rule falsely accepts \osTopthreeFarBalanced\% of unseen people, about half the rate of the nearest-neighbor rule (\osNnFarBalanced\%), while identifying \osTopthreeDirBalanced\% of enrolled probes; at the strict level its false-alarm rate is \osTopthreeFarStrict\%. The centroid rule attains the highest DIR at low false-alarm rates but depends on a representative enrollment, whereas the top-3 mean copes better with atypical samples and is therefore the default. False alarms are more frequent here than in Table~\ref{tab:op} because each probe is compared with every enrolled person, which is why the guard requires unknown faces to persist and face unlock requires a live, smoothed match.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_openset.pdf}
+\caption{Open-set identification on LFW: \osEnrolled{} enrolled people with five images each, probed by their other images and by \osUnknown{} images of unseen people.}
+\label{fig:openset}
+\end{figure}
+
+\begin{table}[!t]
+\centering
+\caption{Open-Set Identification on LFW: DIR (\%) at Fixed False-Alarm Rate and DIR / False-Alarm Rate (\%) at the Security Levels}
+\label{tab:openset}
+\footnotesize
+\setlength{\tabcolsep}{1.6pt}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Rule & DIR at & DIR at & Relaxed & Balanced & Strict \\
+ & FAR 1\% & FAR 0.1\% & & & \\
+\midrule
+Nearest neighb. & \osNnDirTwo & \osNnDirThree & \osNnDirRelaxed/\osNnFarRelaxed & \osNnDirBalanced/\osNnFarBalanced & \osNnDirStrict/\osNnFarStrict \\
+Top-3 (\sys) & \osTopthreeDirTwo & \osTopthreeDirThree & \osTopthreeDirRelaxed/\osTopthreeFarRelaxed & \osTopthreeDirBalanced/\osTopthreeFarBalanced & \osTopthreeDirStrict/\osTopthreeFarStrict \\
+Centroid & \osCentroidDirTwo & \osCentroidDirThree & \osCentroidDirRelaxed/\osCentroidFarRelaxed & \osCentroidDirBalanced/\osCentroidFarBalanced & \osCentroidDirStrict/\osCentroidFarStrict \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Robustness to Degradations}\label{sec:robust}
+Fig.~\ref{fig:robust} shows verification with degraded probes at the balanced threshold, where clean probes give \robClean\% TAR. Darkness hardly matters (\robGainLow\% TAR at 15\% brightness), whereas over-exposure does (\robGainThree\% at three times the brightness), which motivates the asymmetric exposure limits of the quality gate. Recognition holds for faces down to about \robScaleQuarterPx{} pixels in width (\robScaleQuarter\% TAR), while detection breaks down below roughly \robScaleSmallPx{} pixels, where only \robScaleSmallDet\% of faces are found. Gaussian blur of 4 pixels, JPEG quality 4 and noise with a standard deviation of 32 gray levels reduce the TAR to \robBlurFour\%, \robJpegFour\% and \robNoiseThirtyTwo\%, respectively. A mask-like occluder over the lower face keeps \robMask\% TAR and sunglasses \robSunglasses\%, with AUCs of \robMaskAuc{} and \robSunglassesAuc{}, so occlusion harms a fixed threshold more than it harms the ranking of scores.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_robust.pdf}
+\caption{Robustness of verification at the balanced threshold ($\tau=0.45$) when the probe is degraded (\robPairs{} LFW pairs, enrollment image clean). The dashed line is the clean-probe TAR.}
+\label{fig:robust}
+\end{figure*}
+
+On the \robImpN{} impostor comparisons per condition, clean probes produced \robFaClean{} false accepts (FAR \robFarLargeClean\%). Severe degradations lowered the FAR (at most \robFarSevereMax\% for blur of 4 or 6 pixels, three-fold over-exposure, down-scaling to 12\%, JPEG quality 4 or noise of 32 gray levels), whereas mild ones left it of the same order; the highest value, \robFarLargeMax\% (\robFarWorstFa{} false accepts) for down-scaling by a factor of \robFarWorstLevel, remains below the pairwise FAR of the balanced level in Table~\ref{tab:op}. Degraded probes are therefore mostly rejected rather than confused with other people, but mild down-scaling does not by itself make the system safer.
+
+\subsection{Laptop-Webcam Images}\label{sec:webcam}
+Table~\ref{tab:mpii} reports recognition on the MPIIFaceGaze frames, which resemble the use of \sys{} far more closely than LFW does: one person at a desk, a fixed built-in camera and lighting that changes over days and weeks. Across \mpGen{} same-person pairs from different days and \mpImp{} different-person pairs, SFace reaches an AUC of \mpAuc{} and an EER of \mpEer\%, with \mpTarThree\% TAR at $10^{-3}$ FAR. At the balanced threshold \mpFaBal{} impostor pairs (\mpFarBal\%) were accepted and \mpFrrBal\% of genuine pairs rejected, and at the strict threshold no impostor pair was accepted. Under the enrollment protocol of \sys{}, all \mpProbes{} probes from the later recording days were accepted at the balanced level and none of the leave-one-person-out impostor probes was (highest impostor score \mpEnrollImpMax). At the relaxed level, however, \mpEnrollFarRelaxed\% of impostor probes exceeded the threshold, which argues against the relaxed level when several people are enrolled. The ArcFace models are again slightly more accurate. Because the impostor pairs come from only \mpPeople{} identities, these false-accept estimates are less general than the LFW ones, but the results show that the pipeline transfers to everyday laptop-webcam images and to appearance changes over weeks.
+
+\emph{Template adaptation.} To test the bounded update rule of Section~\ref{sec:adaptive} over time, each participant was enrolled as above, the other frames of the first half of their recording days were streamed in chronological order through the production update rule, and the frames of the second half served as probes. Because the frames carry no clock time, at most one update per recording day was allowed, fewer than the application permits. The rule added \adUpdates{} of \adStream{} streamed frames to the templates, which raised the mean genuine score of the \adProbes{} later probes from \adGenStatic{} to \adGenAdapted{} and left the strict-level TAR at \adStrictTarAdapted\%. At the balanced level no impostor probe was accepted before or after adaptation (highest leave-one-person-out impostor score \adImpMaxStatic{} and \adImpMaxAdapted{}), but at the relaxed level impostor acceptance rose from \adRelFarStatic\% to \adRelFarAdapted\%, a further reason to avoid that level. Without any rate limit (\adUpdatesStress{} updates) the outcome was the same at the balanced level. To emulate template poisoning, all \adPoisonOffered{} frames of the other participants were offered to each template through the same rule: none was added, because the highest impostor score, \adPoisonMax, stays well below the update gate of 0.57.
+
+\begin{table*}[!t]
+\centering
+\caption{Recognition on Laptop-Webcam Images (MPIIFaceGaze, \mpPeople{} Participants, Pairs From Different Days)}
+\label{tab:mpii}
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+ & \multicolumn{5}{c}{Pairwise verification (cross-day)} & \multicolumn{2}{c}{Enrollment protocol, $\tau=0.45$} \\
+\cmidrule(lr){2-6}\cmidrule(l){7-8}
+ & & EER & TAR @ FAR & FAR @ & FRR @ & Probes & Impostors \\
+Model & AUC & (\%) & $10^{-3}$ (\%) & $\tau{=}0.45$ (\%) & $\tau{=}0.45$ (\%) & accepted (\%) & accepted (\%) \\
+\midrule
+\MpiiRows
+\bottomrule
+\end{tabular}\\[2pt]
+\raggedright\scriptsize -- : not applicable, because the security thresholds of \sys{} are calibrated for SFace.
+\end{table*}
+
+\subsection{Demographic Differentials}\label{sec:demo}
+Table~\ref{tab:demo} reports error rates per demographic group at the balanced threshold. The groups come from the automatic attribute classifiers of Kumar \emph{et al.}~\cite{kumar2011attributes}, averaged over each person's images (\dmLabeled{} people labeled; people with ambiguous scores are left out of that attribute), and impostor pairs are drawn within each group, the harder and more relevant case~\cite{drozdowski2020bias}. The pipeline is not demographically balanced. Women have a \dmSexFmrRatio{} times higher false-match rate (FMR; \dmFemaleFmr\% vs.\ \dmMaleFmr\%) and a \dmSexFnmrRatio{} times higher false-non-match rate (FNMR; \dmFemaleFnmr\% vs.\ \dmMaleFnmr\%) than men, and the FMR among people labeled Black is about \dmEthFmrRatio{} times that among people labeled White (\dmBlackFmr\% vs.\ \dmWhiteFmr\%), with people labeled Asian in between (\dmAsianFmr\%). The confidence intervals exclude chance as an explanation for these differences; only the group labeled Indian is too small to judge (\dmIndianGen{} genuine pairs). Such differentials are widely reported for face recognition trained on web data~\cite{drozdowski2020bias} and are inherited here from the pretrained network. For \sys{} they matter mainly through the guard, because a higher FMR within a group makes it more likely that a stranger is taken for an enrolled person of the same group. Since LFW is dominated by White men and the labels are estimates, a demographically balanced benchmark is needed to confirm the magnitudes, and group-aware thresholds or a network trained on balanced data are possible mitigations.
+
+\begin{table*}[!t]
+\centering
+\caption{Error Rates per Demographic Group on LFW at $\tau=0.45$ (\%; 95\% Wilson Intervals in Brackets)}
+\label{tab:demo}
+\footnotesize
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}lrrcrc@{}}
+\toprule
+Group & People & Genuine pairs & FNMR (\%) & Impostor pairs (within group) & FMR (\%) \\
+\midrule
+\DemoRows
+\bottomrule
+\end{tabular}\\[2pt]
+\scriptsize Groups from automatic attribute estimates~\cite{kumar2011attributes}.
+\end{table*}
+
+\subsection{Pose and Parallax Geometry}\label{sec:pose}
+To examine both cues with known ground-truth rotation, we reconstructed the 478-point meshes described in Section~\ref{sec:setup}, removed the head pose of each photograph by rotation-only Procrustes alignment to the mean shape, scaled each mesh to an eye distance of 63~mm and rendered it with a pinhole camera ($f=457$~pixels, i.e.\ a 640-pixel image with a $70^\circ$ field of view) at 50~cm, adding 1-pixel noise to the five landmarks. Every face was rendered as a real head turned by $\beta$, as a flat print and as prints bent into cylinders of radius 60, 40 and 30~mm, all rotated by the same $\beta\in[-60^\circ,60^\circ]$. Fitting the head rotations within $\pm30^\circ$ of the \parFacesCal{} calibration faces gave $K=\parKratio$ and $K_p=\parKpar$; the same fit on the \parFacesEval{} evaluation faces gives \parKratioEval{} and \parKparEval{}, so the constants do not depend on the faces they were fitted on. On the evaluation faces, a $25^\circ$ head turn reads $\parHeadRatioTwentyFive^\circ$ from the yaw ratio and $\parHeadParTwentyFive^\circ$ from the parallax (Fig.~\ref{fig:parallax}).
+
+For flat prints the yaw ratio reached \parFlatRatioMax$^\circ$ of apparent yaw change, whereas the parallax never exceeded \parFlatParMax$^\circ$ (99th percentile \parFlatParQ$^\circ$), which is landmark noise below the $14.4^\circ$ parallax threshold. Bent prints produce some parallax, but far less than heads: at $25^\circ$ they read \parBentSixtyParTwentyFive$^\circ$, \parBentFortyParTwentyFive$^\circ$ and \parBentThirtyParTwentyFive$^\circ$ for radii of 60, 40 and 30~mm, compared with \parHeadParTwentyFive$^\circ$ for a head, and they cross the threshold only at extreme angles that also foreshorten the face. On real photographs, where no ground truth is available, the estimate agrees with the mesh-based head pose with a Pearson correlation of \poseR{} for yaw but only \posePitchR{} for pitch, so pitch is used only to guide enrollment. Under sensor noise of 4 gray levels the yaw of a still face fluctuates by \poseJitter$^\circ$ on average (95th percentile \poseJitterQ$^\circ$).
+
+\subsection{Liveness Evaluation}\label{sec:liveres}
+Public attack datasets do not contain free head motion in response to prompts, so we tested the protocol by Monte-Carlo simulation of the production code. Landmarks were rendered at 20 frames per second from the evaluation meshes, with subjects 40--70~cm from the camera, a lateral offset of up to 4~cm and the head facing the camera, and blink and smile scores were simulated. Simulated users reacted after log-normal delays (median 0.7~s, longer than simple visual reaction times of about 0.3~s~\cite{tatsuno2016reaction} to allow for reading the prompt), turned by $30^\circ\pm8^\circ$ at random speed, turned further or blinked harder when the progress bar stalled, blinked spontaneously and mixed up left and right in 5\% of turn prompts. The print attacker tilted the photograph towards the requested side up to a random limit between $40^\circ$ and $75^\circ$. The replay attacker looped a recording of the owner completing one random sequence, and the universal-replay attacker looped a recording in which the owner cycles through all four actions. Each print configuration was attacked \attPrintN{} times and the two replay attacks were run \attReplayN{} and \attUniversalN{} times; live users were simulated in \livN{} sessions for the default protocol and in \livNAbl{} sessions per ablation.
+
+\emph{Comparison with conventional protocols.} Table~\ref{tab:baselines} evaluates three conventional protocols in the same simulation: three head turns checked with the yaw ratio only, a single blink prompt in the spirit of~\cite{pan2007eyeblink}, and three random actions checked with the yaw ratio but without order enforcement or timing. The head-turn protocol accepts every live user but also \lbYawFlat\% of tilted flat prints and \lbYawBent\% of bent prints. Expression prompts stop prints, but all three conventional protocols are vulnerable to replay: a universal recording passes \lbUniMin\%--\lbUniMax\% of their sessions and a recording of one genuine session \lbRepMin\%--\lbRepMax\%. \sys{} rejects every print and lowers these rates to \lbFgUni\% (95\% interval \attUniversalFullLo--\attUniversalFullHi\%) and \lbFgReplay\% at a BPCER of \lbFgLive\%, slightly higher than that of the baselines (\lbYawLive--\lbBlinkLive\%).
+
+\begin{table}[!t]
+\centering
+\caption{Liveness Protocols in One Simulation: BPCER of Live Users and APCER of Attacks (\%)}
+\label{tab:baselines}
+\footnotesize
+\setlength{\tabcolsep}{2.4pt}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Protocol & BPCER & Flat & Bent & Replay & Universal \\
+ & & print & $R{=}40$ & & replay \\
+\midrule
+\BaselineRows
+\bottomrule
+\end{tabular}\\[2pt]
+\raggedright\scriptsize 1,000 sessions per baseline cell (\sys{}: \livN{} live, \attPrintN{} print, \attReplayN{} replay and \attUniversalN{} universal); 95\% Wilson half-widths are at most \ciHalfLive{} (BPCER), \ciHalfReplay{} (replay) and \ciHalfUniversal{} (universal) points.
+\end{table}
+
+\emph{Prints.} No print passed the full protocol (Table~\ref{tab:prints}), because a photograph cannot blink, smile or create parallax, and every sequence includes an expression. With zero successes in \attPrintN{} attempts, the APCER of each instrument is below \attPrintBound\% at 95\% confidence. The turn-only columns isolate the parallax gate: without it, tilted flat prints succeed in \attFlatTurnsOnlyNoParallax\% of sessions through roll leakage, and with it in \attFlatTurnsOnly\%. Bent prints pass turn-only sessions in \attBentRSixtyTurnsOnly\%--\attBentRThirtyTurnsOnly\% of cases because bending produces real parallax, so expression prompts remain necessary.
+
+\begin{table}[!t]
+\centering
+\caption{Print Attacks: APCER (\%) Against an Adaptive Attacker Who Tilts the Print Towards the Requested Side}
+\label{tab:prints}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Presentation & Full & \multicolumn{2}{c}{Turn challenges only} \\
+ & protocol & with parallax & without parallax \\
+\midrule
+\PrintRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{Replay and ablations.} Table~\ref{tab:replay} removes one defense at a time. Against a universal replay, either defense alone is effective: the success rate falls from \attUniversalNoOrderNoTiming\% with neither to \attUniversalNoTiming\% with order enforcement only and \attUniversalNoOrderEnforcement\% with response timing only, and to \attUniversalFull\% with both (Fisher exact tests against neither, order enforcement only and timing only: $p\pUniFullNeither$, $p\pUniFullNoTiming$ and $p\pUniFullNoOrder$). Order enforcement also lowers the success of a looped genuine recording from \attReplayNoOrderEnforcement\% to \attReplayFull\% ($p=\pRepFullNoOrder$). The smile rule adds little (\attUniversalNoSmileRule\% without it). Shortening the response window to 2.5~s reduces universal replay to \attUniversalWindowShort\% ($p\pUniShortWindow$), but rejects \livFrrWinShort\% instead of \livFrr\% of live users. A looped recording of a single genuine session succeeds in \attReplayFull\% of sessions, or \attReplayTurnsOnly\% in turn-only mode. No challenge-response scheme can exclude replay completely, since a recording that happens to show the requested actions at suitable times is effectively a live performance. Three distinct actions out of four give \seqDistinct{} possible sequences (min-entropy \seqMinEnt{} bits), against only \seqDistinctTurns{} in turn-only mode.
+
+\begin{table}[!t]
+\centering
+\caption{Ablation of the Protocol: BPCER of Simulated Live Users and APCER of Replay Attacks (\%)}
+\label{tab:replay}
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Configuration & BPCER & Replay of & Universal \\
+ & (live users) & recording & replay \\
+\midrule
+Full protocol ($t_{\max}=3.5$~s) & \livFrr & \attReplayFull & \attUniversalFull \\
+\quad without response timing & \livFrrNoTiming & \attReplayNoTiming & \attUniversalNoTiming \\
+\quad without smile rule & \livFrrNoSmile & \attReplayNoSmileRule & \attUniversalNoSmileRule \\
+\quad without order enforcement & \livFrrNoOrder & \attReplayNoOrderEnforcement & \attUniversalNoOrderEnforcement \\
+\quad without order enf.\ and timing & n.e. & n.e. & \attUniversalNoOrderNoTiming \\
+\quad without parallax gate & \livFrrNoPar & n.e. & n.e. \\
+\quad response window $t_{\max}=2.5$~s & \livFrrWinShort & \attReplayWindowShort & \attUniversalWindowShort \\
+\quad response window $t_{\max}=5.0$~s & \livFrrWinLong & \attReplayWindowLong & \attUniversalWindowLong \\
+Turn challenges only & \livFrrTurns & \attReplayTurnsOnly & n.e. \\
+\bottomrule
+\end{tabular}\\[2pt]
+\raggedright\scriptsize n.e.: not evaluated, because the defense does not act on that attack (parallax gate vs.\ replays of a real head) or the configuration is covered by Table~\ref{tab:baselines}. 95\% Wilson half-widths: at most \ciHalfLive{}, \ciHalfReplay{} and \ciHalfUniversal{} points for the three columns.
+\end{table}
+
+\emph{Live users and sensitivity.} Live users were rejected in \livFrr\% of sessions (95\% interval \livFrrLo--\livFrrHi\%), and a session lasted \livTime~s on average (95th percentile \livTimeQ~s, Fig.~\ref{fig:liveness}(b)). The parallax gate did not change the BPCER (\livFrrNoPar\% without it, $p=\pParallaxBpcer$), but response timing did: without it no live user was rejected (\livFrrNoTiming\%, $p\pTimingBpcer$), so the timing rule, which mainly targets replay, causes most of the remaining false rejections. Table~\ref{tab:sens} varies the behavioral model. The BPCER is unchanged for median reaction delays of 0.5 and 1.0~s (\sensReactFast\% and \sensReactSlow\%) and stays low for larger turns (\sensAmpLarge\% at $38^\circ$) or occasional confusion (\sensConfTen\% at 10\%); it rises to \sensReactSlowest\% for very slow users (1.4~s), \sensAmpSmall\% for timid turns of $22^\circ$ and \sensConfTwenty\% when left and right are confused in 20\% of prompts. Landmark noise and stricter turn thresholds also raise rejections (Fig.~\ref{fig:liveness}(a)); with 2-pixel noise the BPCER of the default protocol is \livFrrNoise\%.
+
+\begin{table}[!t]
+\centering
+\caption{Sensitivity of the BPCER (\%) to the Behavioral Model of Live Users (Default Values in Bold)}
+\label{tab:sens}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Median reaction delay (s) & 0.5 & \textbf{0.7} & 1.0 & 1.4 \\
+BPCER & \sensReactFast & \textbf{\livFrr} & \sensReactSlow & \sensReactSlowest \\
+\midrule
+Mean turn amplitude ($^\circ$) & 22 & \textbf{30} & 38 & \\
+BPCER & \sensAmpSmall & \textbf{\livFrr} & \sensAmpLarge & \\
+\midrule
+Left/right confusion (\%) & 0 & \textbf{5} & 10 & 20 \\
+BPCER & \livFrrNoConf & \textbf{\livFrr} & \sensConfTen & \sensConfTwenty \\
+\bottomrule
+\end{tabular}\\[2pt]
+\raggedright\scriptsize 1,000 simulated users per non-default setting (\livN{} for the default).
+\end{table}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_liveness.pdf}
+\caption{Live-user rejection. (a) BPCER against the head-turn threshold for three levels of landmark noise (turn-only protocol, 400 sessions per point, 95\% Wilson intervals). (b) Time needed to pass the default three-action check (\livN{} sessions).}
+\label{fig:liveness}
+\end{figure*}
+
+\subsection{Presence Guard}\label{sec:guardres}
+The guard was run with the production engine and thresholds on simulated 4-frame-per-second webcam streams, made by pasting LFW photographs into $640\times480$ frames with random shifts, gain changes and sensor noise. In the \emph{owner at the desk} scenario, \gOwners{} people with at least 20 images were enrolled with 10 images each and then shown their remaining photographs for 1--6~s each, \gMinutes{} minutes per owner; since these photographs vary in age, lighting and pose, the task is harder than facing a webcam at a fixed desk. The owner was recognized in \gMatchFrac\% of frames and labeled unknown in \gUnknownFrac\% (Table~\ref{tab:guard}), and the persistence and quality rules avoided any false intruder lock in \gHours{}~h, which bounds the false-lock rate by \gLockBound{} per hour (rule of three). No walk-away lock occurred even without typing: an authorized face was present in every frame (longest period without one: \gLongestGap~s, against $T_a=30$~s), so the frames labeled unknown are frames in which the largest face in view was another person in the photograph. The guard did issue \gShldAlerts{} shoulder-surfer alerts (\gShldAlertsHour{} per hour). Re-running the production engine on the streamed photographs traced them to the \gdSecond{} of \gdPhotos{} images (\gdSecondPct\%) in which a second, unknown person at least 40~pixels wide is visible, a common sight in news pictures. These alerts are thus correct under the rule, but they reveal that it flags anyone in view; cues such as gaze direction or distance could make it more selective.
+
+\begin{table}[!t]
+\centering
+\caption{Presence Guard on Simulated Webcam Streams (Production Engine and Thresholds, 4 Frames per Second)}
+\label{tab:guard}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\multicolumn{2}{@{}l}{Owner at the desk: \gOwners{} owners, \gHours{}~h, \gFrames{} frames} \\
+\quad frames: owner / uncertain / unknown (\%) & \gMatchFrac{} / \gUncertainFrac{} / \gUnknownFrac{} \\
+\quad false intruder locks per hour & \gFalseIntruder \\
+\quad false walk-away locks per hour, no typing & \gFalseWalk \\
+\quad longest time without recognition (s) & \gLongestGap \\
+\quad shoulder-surfer alerts per hour (see text) & \gShldAlertsHour \\
+\midrule
+\multicolumn{2}{@{}l}{Stranger sits down 5~s after the owner left (\gIntrN{} trials)} \\
+\quad locked within 20~s (\%) & \gIntrRate \\
+\quad time to lock: median / mean / 95th pct.\ (s) & \gIntrMed{} / \gIntrMean{} / \gIntrQ \\
+\multicolumn{2}{@{}l}{Stranger replaces the owner without a gap (\gReplN{} trials)} \\
+\quad locked within 20~s (\%) & \gReplRate \\
+\quad time to lock: median / mean / 95th pct.\ (s) & \gReplMed{} / \gReplMean{} / \gReplQ \\
+\multicolumn{2}{@{}l}{Shoulder-surfer behind the owner (\gShldN{} trials)} \\
+\quad alerted within 20~s (\%) & \gShldRate \\
+\quad time to alert: median / 95th pct.\ (s) & \gShldMed{} / \gShldQ \\
+\bottomrule
+\end{tabular}\\[2pt]
+\raggedright\scriptsize Latencies are quantized to the 0.25~s frame interval, so the median and the 95th percentile can coincide.
+\end{table}
+
+A stranger who sat down was locked out after a median of \gIntrMed~s (95th percentile \gIntrQ~s), i.e.\ the 2.5~s confirmation plus the first embeddings. When the stranger took the owner's place without a gap, the median stayed the same and the 95th percentile grew to \gReplQ~s because of the 3~s rule on authorized faces. Onlookers were reported after a median of \gShldMed~s. The guard did not act within 20~s in \gIntrMissed{} of \gIntrN{} intruder trials and \gShldMissed{} of \gShldN{} onlooker trials. Classifying each trial's stranger with the production engine explains every miss: the quality gate rejected the photograph in \gdIntrQuality{} and \gdShldQuality{} trials and the score fell in the uncertain band in \gdIntrUncertain{} and \gdShldUncertain{} trials, respectively, while no stranger was ever accepted as the owner. The replacement trials, which reuse the same strangers, missed \gReplExtra{} more. The guard therefore trades a few missed strangers for the absence of false locks, the right balance for a tool that must never lock out its owner.
+
+\subsection{Real-World Evaluation}\label{sec:pilot}
+Table~\ref{tab:pilot} lists all sessions of both rounds. Round~1 (\rwPilotTrials{} sessions, earlier protocol) immediately exposed faults that the simulation had missed: only \rwPilotOwnerPass{} of the owner's \rwPilotOwner{} genuine face-unlock sessions passed. In \rwPilotDiff{} sessions the identity check rejected the owner, who had turned their head by $31^\circ$--$49^\circ$, where the embedding differs from the frontal reference; in \rwPilotBlink{} sessions natural blinks were missed because, at the 10 frames per second that the webcam delivered at $1280\times720$, a blink was sampled at peak scores of only 0.23--0.39; and in \rwPilotNoResp{} sessions the owner did not start the requested turn within 3.5~s. We corrected the first two faults (identity check within $20^\circ$ of the baseline pose, blink thresholds 0.30 and 0.20, camera at $640\times480$), kept the response window, re-ran the simulations of Section~\ref{sec:liveres} with the corrected protocol, and ran round~2 with the same tasks.
+
+\begin{table}[!t]
+\centering
+\caption{Real-World Evaluation With the Laptop Webcam: All Sessions of Both Rounds (95\% Wilson Intervals in \%)}
+\label{tab:pilot}
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}lcl@{}}
+\toprule
+Condition & Trials & Outcome \\
+\midrule
+\PilotRows
+\bottomrule
+\end{tabular}\\[2pt]
+\raggedright\scriptsize Guard in log-only mode with the production thresholds; its times are measured from the cue: the owner leaves (walk-away, stranger, locked PC) or a volunteer steps behind the owner (shoulder-surfer). \textsuperscript{a}Only trials in which the onlooker appeared after the cue are timed (see text). One round-1 attack with the owner's own face in view was discarded.
+\end{table}
+
+In round~2 the owner passed \rwOwnerPass{} of \rwOwnerN{} live sessions at about \rwFps{} frames per second with a genuine similarity of about \rwOwnerSim; the identity check ended \rwOwnerFailIdent{} sessions and \rwOwnerFailLate{} failed by a late response. No volunteer was accepted as the owner in \rwVolN{} sessions (highest similarity \rwVolSim), and they passed the liveness check in \rwVolLive{} of them. The other sessions failed by \rwVolFailSmile{} undetected smiles, \rwVolFailWrong{} turns in the wrong direction (first-time users can confuse left and right in a mirrored preview, so a clearer cue such as an arrow is needed), \rwVolFailLate{} late response and \rwVolFailIdent{} identity-check stop. Over both rounds, none of the \rwAllAttN{} phone-screen attacks was accepted (\rwRoundOneAttN{} under the earlier and \rwAttN{} under the corrected protocol; 95\% upper bound \rwAllAttUpper\%): \rwAttNoResp{} produced no valid movement within the response window, \rwAttTurnTO{} never reached the turn threshold, \rwAttExprTO{} failed an expression prompt, \rwAttIdent{} were ended by the identity check and \rwAttLost{} lost the face. By tilting the phone, the attacker produced at most \rwAllAttYawMax$^\circ$ of apparent yaw change, just below the $18^\circ$ turn threshold, and in \rwAttOverPar{} attacks, one in each round, up to \rwAllAttParMax$^\circ$ of parallax, above the $14.4^\circ$ parallax threshold, before the identity check ended the session; genuine turns reached a median parallax of \rwOwnerParMed$^\circ$. The real landmark detector thus reports more parallax for a strongly tilted photograph than the noise model of Section~\ref{sec:pose} predicts, possibly because its landmarks on a foreshortened face are biased towards those of a 3-D head. In these attacks the yaw threshold, the identity check and the expression prompts, not the parallax gate, were decisive, and the strongly tilted print of Section~\ref{sec:pose} remains to be reproduced physically. The guard locked the PC \rwWalkBeep~s after the walk-away cue, 30~s after the owner's face was last seen as configured, because the owner had left the camera's view shortly before the cue. In the volunteer scenarios it acted in every trial. A stranger who sat down was locked out a median of \rwIntrBeep~s after the owner left (\rwIntrLat~s after the stranger was first detected): with the third volunteer the lock took 4.8--8.6~s, close to the simulation (Table~\ref{tab:guard}), whereas with the first two it took 21--28~s, because their live scores repeatedly fell into the uncertain band between 0.30 and 0.45, which interrupts the 2.5~s confirmation of an unknown face. A volunteer at the locked PC was photographed a median of \rwLockwBeep~s after the owner left. The onlooker alert fired in all \rwShldN{} shoulder-surfer trials, but only \rwShldTimed{} of them could be timed: in the other \rwShldUntimed{} the alert came sooner after the cue than the 3~s persistence rule allows, so the volunteer was already in view before the cue. In the timed trial the alert came \rwShldBeep~s after the cue, because the volunteer standing behind the owner was labeled unknown in only 13 of 87 frames. These results confirm the behavior of \sys{} under real conditions and expose its failure modes, and the Wilson intervals in Table~\ref{tab:pilot} quantify their uncertainty.
+
+\subsection{Runtime}\label{sec:runtime}
+Fig.~\ref{fig:runtime} breaks down the latency at the default $640\times480$ resolution: detection takes \rtDet~ms, alignment \rtAlign~ms and one embedding \rtEmb~ms, or \rtEmbTta~ms with mirroring. A frame of the complete pipeline costs \rtPipe~ms on average, \rtPipeAll~ms if every frame is re-embedded and \rtPipeMesh~ms with the face mesh. The live view ran at \rtFps{} frames per second with a total CPU load of \rtCpuLive\%, while the background guard at four frames per second used \rtCpuGuard\% (\rtCpuGuardCore\% of one core). Loading the recognition models takes \rtLoad~ms and the mesh model \rtLoadMesh~ms. Of the three embedding networks in Table~\ref{tab:lfw}, the ArcFace MobileFaceNet is the fastest, another reason to use it where its license permits.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_runtime.pdf}
+\caption{Latency of each stage on the laptop CPU at $640\times480$ (200 runs). The full pipeline re-embeds each tracked face every 0.35~s.}
+\label{fig:runtime}
+\end{figure}
+
+\subsection{Discussion and Limitations}\label{sec:discussion}
+\emph{Security position.} \sys{} only adds protection. A false reject locks a present owner, who then enters the PIN, and a false accept prevents a lock, leaving the OS as it would have been without \sys{}; access to the OS is never granted. Severe degradations lowered the false-accept rate (Section~\ref{sec:robust}), the safety valves prevent lock-out loops, and encrypted templates without stored video limit the privacy exposure. Because other applications share the camera, the guard can be paused during video calls, and it releases the camera while the PC is locked unless the lock-screen watch is enabled.
+
+\emph{Liveness.} In simulation the parallax gate removes the tilted-print weakness of the yaw ratio, and order enforcement combined with response timing makes universal replay several times less successful than in conventional protocols. RGB-only challenge-response still cannot stop a replay that happens to match the prompts, bent prints in turn-only mode, 3-D masks or injected video, so sensitive resources should add IR or depth sensing or a passive learned detector (Section~\ref{sec:related}). Proposition~1 assumes an ideal pinhole camera and exact landmarks. Radial distortion of wide-angle webcams and, as the real-world attacks showed, landmark errors on strongly tilted photographs add parallax to flat presentations, so on real hardware the gate narrows rather than closes the gap between a tilted photograph and a head turn, and the expression prompts remain essential; calibrated undistortion and a larger margin are possible remedies.
+
+\emph{Validity.} The rate estimates for liveness and the guard come from simulation with rendered landmarks, a behavioral model and composited photographs. The held-out calibration and the sensitivity analysis show that the conclusions do not hinge on the fitted constants or on a particular behavioral setting, and the real-world evaluation confirmed the qualitative behavior, but it also showed what simulation misses: real users turn their heads further and react later than modeled, low webcam frame rates blunt blinks, first-time users confuse left and right, tilted photographs produce more parallax than the landmark-noise model predicts, and live impostor scores can hover in the uncertain band and delay intruder locks. The real-world attacks used phone screens only; extending the evaluation to physical print, replay and mask instruments and to a larger, more diverse group of users, with APCER and BPCER reported per instrument, is the next step. Recognition on laptop-webcam images was evaluated with only 15 identities, and the demographic analysis relies on estimated labels on an unbalanced dataset.
+
+% =====================================================================================================
+\section{Conclusion}\label{sec:conclusion}
+This paper presented \sys{}, a CPU-only system that adds face recognition, liveness checks and continuous presence authentication to ordinary webcams while leaving OS sign-in untouched. Its recognition pipeline, built on a permissively licensed SFace model, achieves \lfwAccFull\% accuracy on LFW, slightly below ArcFace models evaluated under the same protocol; its strict setting has a pairwise FAR of \farStrict\% on \opImpostor{} impostor pairs, and it processes a frame in about \rtPipe~ms on a laptop CPU. We showed that perspective-induced roll leakage lets tilted prints pass five-landmark head-turn checks and proposed a homography-parallax cue that vanishes for planar presentations under an ideal pinhole camera. Combined with ordered and timed challenges, it stopped every simulated print attack and reduced replay success well below that of conventional protocols, although replays of the genuine user remain a limit of RGB-only liveness. On laptop-webcam images recorded over weeks the pipeline reaches an EER of \mpEer\%, but its false-match rates differ substantially between demographic groups. A real-world evaluation over \rwAllSessions{} recorded sessions rejected all \rwAllAttN{} phone-screen attacks, revealed two faults that simulation had missed, which we corrected, and showed that tilted photographs produce more parallax on real hardware than in simulation. Future work includes physical print, replay and mask attacks with a larger group of users, a demographically balanced evaluation with mitigation of the differentials, passive presentation-attack models and integration with hardware-backed credentials.
+
+\section*{Acknowledgment}
+In accordance with the IEEE policy on AI-generated content, the authors disclose that an AI system (Claude, Anthropic) was used to write the software and experiment scripts, to generate the figures, and to draft the text of all sections, figure captions and tables. The authors reviewed and edited the manuscript, checked the code, verified every reported result and take full responsibility for the content.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
